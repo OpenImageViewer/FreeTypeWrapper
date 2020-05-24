@@ -1,8 +1,5 @@
 #pragma once
-//#include "FreeTypeHeaders.h"
-
-
-#if OIV_BUILD_FREETYPE == 1
+#include "FreeTypeHeaders.h"
 #include "FreeTypeFont.h"
 #include <map>
 #include <cstdint>
@@ -88,5 +85,3 @@ private:
     std::map<std::string, FreeTypeFontUniquePtr> fFontNameToFont;
     
 };
-
-#endif
