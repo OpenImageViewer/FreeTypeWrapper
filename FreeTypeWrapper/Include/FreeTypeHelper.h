@@ -1,5 +1,4 @@
 #pragma once
-#if OIV_BUILD_FREETYPE == 1
 #include "FreeTypeConnector.h"
 namespace OIV
 {
@@ -34,7 +33,7 @@ namespace OIV
         }
     };
 }
-#endif
+
 
 
     

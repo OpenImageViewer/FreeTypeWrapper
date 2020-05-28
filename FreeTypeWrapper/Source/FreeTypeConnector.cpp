@@ -1,7 +1,9 @@
-﻿#include "FreeTypeHeaders.h"
-
-#if OIV_BUILD_FREETYPE == 1
-#include "FreeTypeConnector.h"
+﻿#include <ft2build.h>
+#include <freetype/freetype.h>
+#include <freetype/ftstroke.h>
+#include <freetype/ftlcdfil.h>
+//#include "FreeTypeHeaders.h"
+#include "../Include/FreeTypeConnector.h"
 #include "FreeTypeRenderer.h"
 #include <LLUtils/Exception.h>
 #include "CodePoint.h"
@@ -15,6 +17,10 @@
 #include <LLUtils/Buffer.h>
 #include "BlitBox.h"
 #include "MetaTextParser.h"
+#include "FreeTypeFont.h"
+
+
+
 
 
 
@@ -334,4 +340,3 @@ void FreeTypeConnector::CreateBitmap(const TextCreateParams& textCreateParams, B
     out_bitmap.rowPitch = destRowPitch;
  
 }
-#endif // endif OIV_BUILD_FREETYPE

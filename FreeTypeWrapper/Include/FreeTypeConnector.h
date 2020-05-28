@@ -1,13 +1,23 @@
 #pragma once
-#include "FreeTypeHeaders.h"
-#include "FreeTypeFont.h"
 #include <map>
 #include <cstdint>
 #include <string>
-#include <vector>
+
 #include <LLUtils/Color.h>
 #include <LLUtils/Buffer.h>
 #include <LLUtils/Singleton.h>
+
+class FreeTypeFont;
+using FreeTypeFontUniquePtr = std::unique_ptr<FreeTypeFont>;
+
+#pragma region FreeType forward declerations
+
+struct  FT_StrokerRec_;
+typedef struct FT_StrokerRec_* FT_Stroker;
+typedef int  FT_Error;
+typedef struct FT_LibraryRec_* FT_Library;
+
+#pragma endregion FreeType forward declerations
 
 
 class FreeTypeConnector : public LLUtils::Singleton<FreeTypeConnector>
@@ -85,3 +95,4 @@ private:
     std::map<std::string, FreeTypeFontUniquePtr> fFontNameToFont;
     
 };
+
