@@ -3,23 +3,25 @@
 #include <string>
 #include <LLUtils/Color.h>
 
-
-struct FormattedTextEntry
+namespace FreeType
 {
-    LLUtils::Color textColor;
-    //LLUtils::Color backgroundColor;
-    //uint32_t size;
-    //uint32_t outlineWidth;
-    //uint32_t outlineColor;
+    struct FormattedTextEntry
+    {
+        LLUtils::Color textColor;
+        //LLUtils::Color backgroundColor;
+        //uint32_t size;
+        //uint32_t outlineWidth;
+        //uint32_t outlineColor;
 
-    std::string text;
-    static FormattedTextEntry Parse(const std::string& format, const std::string& text);
-};
+        std::wstring text;
+        static FormattedTextEntry Parse(const std::wstring& format, const std::wstring& text);
+    };
 
-using VecFormattedTextEntry = std::vector<FormattedTextEntry>;
+    using VecFormattedTextEntry = std::vector<FormattedTextEntry>;
 
-class MetaText
-{
-public:
-    static VecFormattedTextEntry GetFormattedText(std::string text);
-};
+    class MetaText
+    {
+    public:
+        static VecFormattedTextEntry GetFormattedText(std::wstring text);
+    };
+}

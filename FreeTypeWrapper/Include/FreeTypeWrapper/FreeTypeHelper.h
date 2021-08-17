@@ -1,6 +1,6 @@
 #pragma once
 #include "FreeTypeConnector.h"
-namespace OIV
+namespace FreeType
 {
 
     class FreeTypeHelper

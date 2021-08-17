@@ -1,26 +1,15 @@
-#Freetype Wrapper
+﻿# CMakeList.txt : CMake project for GFXRendererD3D11, include source and define
+# project specific logic here.
+#
+cmake_minimum_required (VERSION 3.8)
 
 
 set(CMAKE_CXX_STANDARD 20)
 
- file(GLOB_RECURSE sourceFiles
-     "./Source/*.h"
-     "./Source/*.cpp"
- )
-
-#set(External ./External)
-#set(FreeTypePath ./External/freetype2)
-#set(FreeTypeOutput ./ExternalBuild/freetype2)
-set(TargetName FreeTypeWrapper)
-
-add_subdirectory(./External/freetype2)
-
-add_library(${TargetName} ${sourceFiles})
-
-target_include_directories(${TargetName} PRIVATE ./External/freetype2/include)
-target_include_directories(${TargetName} PRIVATE ./Source)
-target_include_directories(${TargetName} PRIVATE ./Include)
-target_include_directories(${TargetName} PRIVATE ./External/LLUtils/Include)
+if(NOT TARGET FreeTypeTest)
+	include_directories(../External/FreeTypeWrapper/Include)
+	# Add source to this project's executable.
+	add_executable (FreeTypeTest "Test.cpp")
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     #enabled warnings flags
@@ -37,6 +26,9 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
   endif()
 endif()
+endif()
 
-#add_subdirectory(${FreeTypePath} ${FreeTypeOutput})
-target_link_libraries(${TargetName} PRIVATE freetype)
+target_include_directories(FreeTypeTest PRIVATE ../FreeTypeWrapper/Include)
+target_include_directories(FreeTypeTest PRIVATE ../FreeTypeWrapper/External/LLUtils/Include)
+
+target_link_libraries(FreeTypeTest PRIVATE FreeTypeWrapper)

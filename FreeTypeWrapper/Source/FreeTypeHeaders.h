@@ -21,6 +21,3 @@
 #ifdef __clang__
 	#pragma clang diagnostic pop
 #endif
-
-
-using u8string = std::basic_string<char>;
