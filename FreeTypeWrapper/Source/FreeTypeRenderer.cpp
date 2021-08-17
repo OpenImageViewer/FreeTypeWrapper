@@ -1,44 +1,45 @@
-#include "FreeTypeRenderer.h"
-#include <ft2build.h>
+
+#include <FreeTypeHeaders.h>
 #include <freetype/ftglyph.h>
 #include <freetype/freetype.h>
 #include "freetype/ftimage.h"
 #include <LLUtils/Exception.h>
+#include <LLUtils/Buffer.h>
+#include <FreeTypeRenderer.h>
 
 
-FreeTypeRenderer::BitmapProperties FreeTypeRenderer::GetBitmapGlyphProperties(const FT_Bitmap bitmap)
-{
-	BitmapProperties bitmapProperties;
+    FreeTypeRenderer::BitmapProperties FreeTypeRenderer::GetBitmapGlyphProperties(const FT_Bitmap bitmap)
+    {
+        FreeTypeRenderer::BitmapProperties bitmapProperties;
+        
+        switch (bitmap.pixel_mode)
+        {
+        case FT_PIXEL_MODE_GRAY:
+            bitmapProperties.numChannels = 1;
+            break;
+        case FT_PIXEL_MODE_LCD:
+            bitmapProperties.numChannels = 3;
+            break;
+        default:
+            LL_EXCEPTION_UNEXPECTED_VALUE;
+        }
 
-	switch (bitmap.pixel_mode)
-	{
-	case FT_PIXEL_MODE_GRAY:
-		bitmapProperties.numChannels = 1;
-		break;
-	case FT_PIXEL_MODE_LCD:
-		bitmapProperties.numChannels = 3;
-		break;
-	default:
-		LL_EXCEPTION_UNEXPECTED_VALUE;
-	}
+        bitmapProperties.bitsPerChannel = static_cast<uint32_t>(std::log2(bitmap.num_grays + 1));
+        bitmapProperties.height = bitmap.rows;
+        bitmapProperties.width = bitmap.width / bitmapProperties.numChannels;
+        bitmapProperties.rowpitchInBytes = static_cast<uint32_t>(bitmap.pitch);
 
-	bitmapProperties.bitsPerChannel = static_cast<uint32_t>(std::log2(bitmap.num_grays + 1));
-	bitmapProperties.height = bitmap.rows;
-	bitmapProperties.width = bitmap.width / bitmapProperties.numChannels;
-	bitmapProperties.rowpitchInBytes = bitmap.pitch;
+        return bitmapProperties;
+    }
 
-	return bitmapProperties;
-}
-
-LLUtils::Buffer FreeTypeRenderer::RenderGlyphToBuffer(const GlyphRGBAParams& params)
-{
+    LLUtils::Buffer FreeTypeRenderer::RenderGlyphToBuffer(const FreeTypeRenderer::GlyphRGBAParams& params)
+    {
     using namespace LLUtils;
 
     FT_Bitmap bitmap = params.bitmapGlyph->bitmap;
 
 
     const int destPixelSize = 4;
-    const int sourcePixelSize = params.bitmapProperties.numChannels;
     const uint32_t HeightInPixels = params.bitmapProperties.height;
     const uint32_t widthInPixels = params.bitmapProperties.width;
 
@@ -48,7 +49,7 @@ LLUtils::Buffer FreeTypeRenderer::RenderGlyphToBuffer(const GlyphRGBAParams& par
 
 
     const size_t bufferSize = widthInPixels * HeightInPixels * destPixelSize;
-    Buffer RGBABitmap(bufferSize);
+    LLUtils::Buffer RGBABitmap(bufferSize);
 
     // Fill glyph background with background color.
     uint32_t* RGBABitmapPtr = reinterpret_cast<uint32_t*>(RGBABitmap.data());
@@ -97,7 +98,7 @@ LLUtils::Buffer FreeTypeRenderer::RenderGlyphToBuffer(const GlyphRGBAParams& par
             }
 
 
-            LLUtils::Color source(A << 24 | B << 16 | G << 8 | R);
+            LLUtils::Color source(R, G, B, A);
             RGBABitmapPtr[destPos] = LLUtils::Color(RGBABitmapPtr[destPos]).Blend(source).colorValue;
         }
 

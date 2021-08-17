@@ -10,6 +10,10 @@ public:
     {
         fName = fileName;
         fLibrary = ftLibrary;
+
+        if (fileName.empty() )
+            LL_EXCEPTION(LLUtils::Exception::ErrorCode::InvalidState, "Font file path must be specified");
+
         FT_Error error = FT_New_Face(fLibrary, LLUtils::StringUtility::ToAString(fName).c_str(), 0, &fFace);
         if (error == FT_Err_Unknown_File_Format)
             LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, "FreeType error Unknown file format");
@@ -20,8 +24,11 @@ public:
     ~FreeTypeFont()
     {
         FT_Error error = FT_Done_Face(fFace);
-//        if (error)
-  //          LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, "FreeType error, can not destroy face");
+        if (error != FT_Err_Ok)
+        {
+            // TODO: Log en error 
+        }
+  
     }
 
     void SetSize(uint16_t fontSize, uint16_t DPIx, uint16_t DPIy)
@@ -35,6 +42,9 @@ public:
                 DPIx,     /* horizontal device resolution    */
                 DPIy);   /* vertical device resolution      */
 
+
+        if (error != FT_Err_Ok)
+            LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, "FreeType error, can't set char size");
     }
 
     FT_Face GetFace()

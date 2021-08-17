@@ -2,11 +2,6 @@
 #include <cstdint>
 #include <LLUtils/Color.h>
 #include <LLUtils/Buffer.h>
-
-typedef struct FT_BitmapGlyphRec_* FT_BitmapGlyph;
-typedef struct  FT_Bitmap_ FT_Bitmap;
-
-
 class FreeTypeRenderer
 {
 public:

@@ -1,5 +1,4 @@
 #pragma once
-#include "FreeTypeHeaders.h"
 #include <vector>
 #include <string>
 #include <LLUtils/Color.h>
@@ -14,7 +13,7 @@ struct FormattedTextEntry
     //uint32_t outlineColor;
 
     std::string text;
-    static FormattedTextEntry Parse(const std::string& format);
+    static FormattedTextEntry Parse(const std::string& format, const std::string& text);
 };
 
 using VecFormattedTextEntry = std::vector<FormattedTextEntry>;
@@ -22,5 +21,5 @@ using VecFormattedTextEntry = std::vector<FormattedTextEntry>;
 class MetaText
 {
 public:
-    static VecFormattedTextEntry GetFormattedText(std::string text, int fontSize);
+    static VecFormattedTextEntry GetFormattedText(std::string text);
 };

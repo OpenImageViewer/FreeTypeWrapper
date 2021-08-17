@@ -1,6 +1,6 @@
 #include "MetaTextParser.h"
 #include <LLUtils/StringUtility.h>
-FormattedTextEntry FormattedTextEntry::Parse(const std::string& format)
+FormattedTextEntry FormattedTextEntry::Parse(const std::string& format, const std::string& text)
 {
     using namespace std;
     using namespace LLUtils;
@@ -14,17 +14,22 @@ FormattedTextEntry FormattedTextEntry::Parse(const std::string& format)
     using stringList = ListString<string>;
     using u8char = string::value_type;
 
-
+    bool isValid = false;
     stringList properties = StringUtility::split<u8char>(trimmed, ';');
     stringstream ss;
     for (const string& prop : properties)
     {
         stringList trimmedList = StringUtility::split<u8char>(prop, '=');
-        const string key = StringUtility::ToLower<string>(trimmedList[0]);
-        const string& value = trimmedList[1];
-        if (key == "textcolor")
+
+        if (trimmedList.size() == 2)
         {
-            result.textColor = Color::FromString(StringUtility::ToAString(value));
+            const string key = StringUtility::ToLower<string>(trimmedList[0]);
+            const string& value = trimmedList[1];
+            if (key == "textcolor")
+            {
+                result.textColor = Color::FromString(StringUtility::ToAString(value));
+            }
+            isValid = true;
         }
         /*else if (key == u8"backgroundcolor")
         {
@@ -44,12 +49,18 @@ FormattedTextEntry FormattedTextEntry::Parse(const std::string& format)
         }*/
     }
 
+    if (isValid)
+        result.text = text;
+    else
+        result.text = format + text;
+
+
     return result;
 }
 
 
 
-VecFormattedTextEntry MetaText::GetFormattedText(std::string text, int fontSize)
+VecFormattedTextEntry MetaText::GetFormattedText(std::string text)
 {
 
     using namespace std;
@@ -61,7 +72,7 @@ VecFormattedTextEntry MetaText::GetFormattedText(std::string text, int fontSize)
         return formattedText;
 
 
-    for (int i = 0; i < text.length(); i++)
+    for (size_t i = 0; i < text.length(); i++)
     {
         if (text[i] == '<')
         {
@@ -73,7 +84,7 @@ VecFormattedTextEntry MetaText::GetFormattedText(std::string text, int fontSize)
                 beginTag = i;
                 endTag = -1;
 
-                FormattedTextEntry entry = FormattedTextEntry::Parse(tagContents);
+                FormattedTextEntry entry = FormattedTextEntry::Parse(tagContents, textInsideTag);
                 entry.text = textInsideTag;
                 formattedText.push_back(entry);
             }
@@ -106,7 +117,7 @@ VecFormattedTextEntry MetaText::GetFormattedText(std::string text, int fontSize)
         beginTag = i;
         endTag = -1;
 
-        entry = FormattedTextEntry::Parse(tagContents);
+        entry = FormattedTextEntry::Parse(tagContents,textInsideTag);
         entry.text = textInsideTag;
     }
     formattedText.push_back(entry);

@@ -10,7 +10,7 @@ struct BlitBox
     uint32_t top;
     uint32_t pixelSizeInbytes;
 
-    int32_t GetStartOffset() const
+    uint32_t GetStartOffset() const
     {
         return (top * rowPitch) + (left * pixelSizeInbytes);
 

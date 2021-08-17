@@ -10,7 +10,10 @@ set(FreeTypeOutput ./ExternalBuild/freetype2)
 set(TargetName FreeTypeWrapper)
 
 add_library(${TargetName} ${sourceFiles})
+
 target_include_directories(${TargetName} PRIVATE ${FreeTypePath}/include)
+target_include_directories(${TargetName} PRIVATE ./Source)
+target_include_directories(${TargetName} PRIVATE ./Include)
 target_include_directories(${TargetName} PRIVATE ${External}/LLUtils/Include)
 
 add_subdirectory(${FreeTypePath} ${FreeTypeOutput})

@@ -1,4 +1,5 @@
 #pragma once
+
 #include <map>
 #include <cstdint>
 #include <string>
@@ -7,10 +8,13 @@
 #include <LLUtils/Buffer.h>
 #include <LLUtils/Singleton.h>
 
+
+#pragma region FreeType forward declerations
+
 class FreeTypeFont;
 using FreeTypeFontUniquePtr = std::unique_ptr<FreeTypeFont>;
 
-#pragma region FreeType forward declerations
+
 
 struct  FT_StrokerRec_;
 typedef struct FT_StrokerRec_* FT_Stroker;
@@ -25,8 +29,7 @@ class FreeTypeConnector : public LLUtils::Singleton<FreeTypeConnector>
 
     ///*** workaround to solve***
 
-    static const size_t ExtraWidth = 1;
-    static const size_t ExtraRowHeight = 1;
+    static const size_t ExtraWidth = 2;
 
     friend class LLUtils::Singleton<FreeTypeConnector>;
 public:
@@ -61,15 +64,9 @@ public:
         uint16_t DPIy;
     };
 
-    void CreateBitmap(const TextCreateParams& textCreateParams, Bitmap & out_bitmap);
-
-
-private:
-       // private types
     struct TextMesureParams
     {
         TextCreateParams createParams;
-        FreeTypeFont* font;
     };
 
     struct TextMesureResult
@@ -78,14 +75,22 @@ private:
         uint32_t height;
         uint32_t rowHeight;
         int32_t descender;
+        uint32_t maxXAdvance;
     };
+
+    void CreateBitmap(const TextCreateParams& textCreateParams, Bitmap & out_bitmap);
+    void MesaureText(const TextMesureParams& measureParams, TextMesureResult& out_result);
+
+
+private:
+       // private types
+   
     //private member methods
 
     FreeTypeConnector();
     FreeTypeFont* GetOrCreateFont(std::string fontPath);
     FT_Stroker GetStroker();
     std::string GenerateFreeTypeErrorString(std::string userMessage, FT_Error error);
-    void MesaureText(const TextMesureParams& measureParams, TextMesureResult& out_result);
     
 
 private:
@@ -95,4 +100,3 @@ private:
     std::map<std::string, FreeTypeFontUniquePtr> fFontNameToFont;
     
 };
-
