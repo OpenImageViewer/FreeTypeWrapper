@@ -7,6 +7,7 @@
 #include <LLUtils/Color.h>
 #include <LLUtils/Buffer.h>
 #include <LLUtils/Singleton.h>
+#include <LLUtils/Rect.h>
 
 
 #pragma region FreeType forward declerations
@@ -70,19 +71,14 @@ namespace FreeType
 
         struct TextMesureResult
         {
-            uint32_t width;
-            uint32_t height;
+            LLUtils::RectI32 rect;
             uint32_t rowHeight;
-            int32_t descender;
-            uint32_t maxXAdvance;
         };
 
         void CreateBitmap(const TextCreateParams& textCreateParams, Bitmap& out_bitmap);
-        void MesaureText(const TextMesureParams& measureParams, TextMesureResult& out_result);
 
 
     private:
-        // private types
 
      //private member methods
 
@@ -90,6 +86,7 @@ namespace FreeType
         FreeTypeFont* GetOrCreateFont(const std::wstring& fontPath);
         FT_Stroker GetStroker();
         std::string GenerateFreeTypeErrorString(std::string userMessage, FT_Error error);
+        void MesaureText(const TextMesureParams& measureParams, TextMesureResult& out_result);
 
 
     private:

@@ -73,9 +73,28 @@ namespace FreeType
             infoHeader.biSize = 40;
             infoHeader.biSizeImage = rowPitch * fBitmapBuffer.height;
 
+            LLUtils::Buffer flipped(fBitmapBuffer.height * fBitmapBuffer.rowPitch);
+
+
+            for (size_t y = 0; y < fBitmapBuffer.height; y++)
+            {
+                auto destRow = (reinterpret_cast<uint8_t*>(flipped.data())) + (fBitmapBuffer.height - y - 1) * fBitmapBuffer.rowPitch;
+                auto sourceRow = (reinterpret_cast<const uint8_t*>(fBitmapBuffer.buffer)) + y * fBitmapBuffer.rowPitch;
+
+                for (uint32_t x = 0; x < fBitmapBuffer.width; x++)
+                {
+                    auto RGBA = reinterpret_cast<const uint32_t*>(sourceRow)[x];
+                    LLUtils::Color c(RGBA);
+                    std::swap(c.R, c.B);
+                    
+                    reinterpret_cast<uint32_t*>(destRow)[x] = _byteswap_ulong(c.colorValue);
+                }
+            }
+
+
             LLUtils::File::WriteAllBytes(fileName, sizeof(BitmapFileHeader), reinterpret_cast<std::byte*>(&fileHeader));
             LLUtils::File::WriteAllBytes(fileName, sizeof(BitmapInfoHeader), reinterpret_cast<const std::byte*>(&infoHeader), true);
-            LLUtils::File::WriteAllBytes(fileName, infoHeader.biSizeImage, reinterpret_cast<const std::byte*>(fBitmapBuffer.buffer), true);
+            LLUtils::File::WriteAllBytes(fileName, infoHeader.biSizeImage, reinterpret_cast<const std::byte*>(flipped.data()), true);
 
         }
 

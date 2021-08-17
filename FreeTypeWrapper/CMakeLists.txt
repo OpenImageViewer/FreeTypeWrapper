@@ -14,10 +14,13 @@ set(CMAKE_CXX_STANDARD 20)
 set(TargetName FreeTypeWrapper)
 
 add_subdirectory(./External/freetype2)
+add_subdirectory(./External/fribidi)
 
 add_library(${TargetName} ${sourceFiles})
 
 target_include_directories(${TargetName} PRIVATE ./External/freetype2/include)
+target_include_directories(${TargetName} PRIVATE ./External/fribidi/lib)
+target_include_directories(${TargetName} PRIVATE ./External/utf-cpp/include)
 target_include_directories(${TargetName} PRIVATE ./Source)
 target_include_directories(${TargetName} PRIVATE ./Include)
 target_include_directories(${TargetName} PRIVATE ./External/LLUtils/Include)
@@ -40,3 +43,4 @@ endif()
 
 #add_subdirectory(${FreeTypePath} ${FreeTypeOutput})
 target_link_libraries(${TargetName} PRIVATE freetype)
+target_link_libraries(${TargetName} PRIVATE libfribidi)

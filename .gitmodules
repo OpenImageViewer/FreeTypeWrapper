@@ -4,3 +4,9 @@
 [submodule "FreeTypeWrapper/External/LLUtils"]
 	path = FreeTypeWrapper/External/LLUtils
 	url = https://github.com/TheNicker/LLUtils.git
+[submodule "FreeTypeWrapper/External/utf-cpp"]
+	path = FreeTypeWrapper/External/utf-cpp
+	url = https://github.com/ww898/utf-cpp.git
+[submodule "FreeTypeWrapper/External/fribidi"]
+	path = FreeTypeWrapper/External/fribidi
+	url = https://github.com/tamaskenez/fribidi-cmake.git

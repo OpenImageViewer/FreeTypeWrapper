@@ -1,10 +1,9 @@
-﻿#include <FreeTypeWrapper/FreeTypeConnector.h>
-
-#include <locale>
+﻿#include <locale>
 #include <vector>
 #include <string>
 #include <iostream>
 
+#include <FreeTypeWrapper/FreeTypeConnector.h>
 #include <FreeTypeRenderer.h>
 #include <FreeTypeFont.h>
 
@@ -14,9 +13,10 @@
 #include <LLUtils/Color.h>
 #include <LLUtils/Buffer.h>
 
-#include "CodePoint.h"
 #include "BlitBox.h"
 #include "MetaTextParser.h"
+#include <fribidi.h>
+#include <ww898/utf_converters.hpp>
 
 
 namespace FreeType
@@ -48,6 +48,31 @@ namespace FreeType
         return std::string("FreeType error: " + std::to_string(error) + ", " + userMessage);
     }
 
+    template <typename string_type>
+    std::u32string bidi_string(const string_type& logical)
+    {
+        FriBidiParType base = FRIBIDI_PAR_ON;
+        FriBidiStrIndex* ltov, * vtol;
+        FriBidiLevel* levels;
+        FriBidiStrIndex new_len;
+        fribidi_boolean log2vis;
+        std::u32string logicalUTF32 = ww898::utf::convz<char32_t>(logical);
+        std::u32string visualUTF32(logicalUTF32.length(), 0);
+
+        ltov = nullptr;
+        vtol = nullptr;
+        levels = nullptr;
+
+        log2vis = fribidi_log2vis(reinterpret_cast<FriBidiChar*>(logicalUTF32.data()), logicalUTF32.length(), &base,
+            /* output */
+            reinterpret_cast<FriBidiChar*>(visualUTF32.data()), ltov, vtol, levels);
+        
+        if (!log2vis) 
+            LL_EXCEPTION(LLUtils::Exception::ErrorCode::InvalidState, "Cannot process string");
+        
+        return visualUTF32;
+    }
+
 
     void FreeTypeConnector::MesaureText(const TextMesureParams& measureParams, TextMesureResult& mesureResult)
     {
@@ -55,32 +80,36 @@ namespace FreeType
         FreeTypeFont* font = GetOrCreateFont(measureParams.createParams.fontPath);
         FT_Face face = font->GetFace();
         const std::wstring& text = measureParams.createParams.text;
+
         font->SetSize(measureParams.createParams.fontSize, measureParams.createParams.DPIx, measureParams.createParams.DPIy);
         const uint32_t rowHeight = static_cast<int>((static_cast<uint32_t>(face->size->metrics.height) >> 6) + measureParams.createParams.outlineWidth * 2);
 
-        mesureResult.maxXAdvance = static_cast<uint32_t>(face->size->metrics.max_advance >> 6);
+        mesureResult.rect = {};
 
         vector<FormattedTextEntry> formattedText = MetaText::GetFormattedText(text);
-
+        
         int penX = 0;
+        int penY = 0;
         int numberOfLines = 1;
         int maxRowWidth = 0;
+        
         for (const FormattedTextEntry& el : formattedText)
         {
-            for (const decltype(el.text)::value_type& e : el.text)
+            std::u32string visualText = bidi_string(el.text.c_str());
+            
+            for (const decltype(el.text)::value_type& codepoint : visualText)
             {
-                if (e == '\n')
+                if (codepoint == '\n')
                 {
                     numberOfLines++;
                     maxRowWidth = (std::max)(penX, maxRowWidth);
                     penX = 0;
+                    penY += rowHeight;
                     continue;
                 }
 
-                //string mbs = conversion.to_bytes(u"\u4f60\u597d");  // ni hao (你好
 
-                const int codePoint = e;  //CodePoint::codepoint(u"\u4f60");
-                const FT_UInt glyph_index = FT_Get_Char_Index(face, static_cast<FT_ULong>(codePoint));
+                const FT_UInt glyph_index = FT_Get_Char_Index(face, codepoint);
 
                 if (FT_Error error = FT_Load_Glyph(
                     face,          /* handle to face object */
@@ -89,6 +118,12 @@ namespace FreeType
                 {
                     LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, GenerateFreeTypeErrorString("can not load glyph", error));
                 }
+                
+                mesureResult.rect.LeftTop().x = std::min<int>(mesureResult.rect.LeftTop().x, face->glyph->bitmap_left + penX);
+                mesureResult.rect.LeftTop().y = std::min<int>(mesureResult.rect.LeftTop().y, face->glyph->bitmap_top + penY);
+
+                mesureResult.rect.RightBottom().x = std::max<int>(mesureResult.rect.RightBottom().x, face->glyph->bitmap_left + face->glyph->bitmap.width + penX);
+                mesureResult.rect.RightBottom().y = std::max<int>(mesureResult.rect.RightBottom().y, rowHeight - face->glyph->bitmap.rows + face->glyph->bitmap_top + penY);
 
                 penX += face->glyph->advance.x >> 6;
             }
@@ -100,11 +135,7 @@ namespace FreeType
 
         // Add outline width to the final width of the rasterized text.
         maxRowWidth += measureParams.createParams.outlineWidth * 2;
-
-        mesureResult.height = static_cast<uint32_t>(numberOfLines * rowHeight);
-        mesureResult.width = static_cast<uint32_t>(maxRowWidth);
         mesureResult.rowHeight = static_cast<uint32_t>(rowHeight);
-        mesureResult.descender = (face->size->metrics.descender >> 6) - static_cast<FT_Pos>(measureParams.createParams.outlineWidth);
     }
 
     FreeTypeFont* FreeTypeConnector::GetOrCreateFont(const std::wstring& fontPath)
@@ -162,35 +193,28 @@ namespace FreeType
         TextMesureResult mesaureResult;
 
         MesaureText(params, mesaureResult);
-        uint32_t destWidth = mesaureResult.width;
-        uint32_t destHeight = mesaureResult.height;
-
-
-        // ****** temporary workaround for outline text.
-        //TODO: calculate better the destination width
-        destWidth += ExtraWidth;
-        //***************
-
-
-
-
-        vector<FormattedTextEntry> formattedText = MetaText::GetFormattedText(text);
-
-        const FT_Render_Mode textRenderMOde = (renderMode == RenderMode::SubpixelAntiAliased ? FT_RENDER_MODE_LCD : FT_RENDER_MODE_NORMAL);
+        
+        mesaureResult.rect = mesaureResult.rect.Infalte(OutlineWidth * 2 , OutlineWidth * 2);
 
         const uint32_t destPixelSize = 4;
-        const uint32_t destRowPitch = destWidth * destPixelSize;
-        const uint32_t sizeOfDestBuffer = destHeight * destRowPitch;
+        const uint32_t destRowPitch = mesaureResult.rect.GetWidth() * destPixelSize;
+        const uint32_t sizeOfDestBuffer = mesaureResult.rect.GetHeight() * destRowPitch;
         const bool renderOutline = OutlineWidth > 0;
         const bool renderText = true;
 
         LLUtils::Buffer textBuffer(sizeOfDestBuffer);
 
-        // when rendering with outline, the outline buffer is the final buffer, otherwise the text buffer is the final buffer.
-
+        //// when rendering with outline, the outline buffer is the final buffer, otherwise the text buffer is the final buffer.
         //Reset final text buffer to background color.
-        for (uint32_t i = 0; i < destWidth * destHeight; i++)
-            reinterpret_cast<uint32_t*>(textBuffer.data())[i] = backgroundColor.colorValue;
+
+        LLUtils::Color textBackgroundBuffer = renderOutline ? 0 : backgroundColor.colorValue;
+        
+
+        for (uint32_t i = 0; i < mesaureResult.rect.GetWidth() * mesaureResult.rect.GetHeight(); i++)
+            reinterpret_cast<uint32_t*>(textBuffer.data())[i] = textBackgroundBuffer.colorValue;
+
+
+        const FT_Render_Mode textRenderMOde = (renderMode == RenderMode::SubpixelAntiAliased ? FT_RENDER_MODE_LCD : FT_RENDER_MODE_NORMAL);
 
         LLUtils::Buffer outlineBuffer;
         BlitBox  destOutline = {};
@@ -198,42 +222,46 @@ namespace FreeType
         {
             outlineBuffer.Allocate(sizeOfDestBuffer);
             //Reset outline buffer to background color.
-            for (uint32_t i = 0; i < destWidth * destHeight; i++)
-                reinterpret_cast<uint32_t*>(outlineBuffer.data())[i] = backgroundColor.colorValue;
+            for (uint32_t i = 0; i < mesaureResult.rect.GetWidth() * mesaureResult.rect.GetHeight(); i++)
+                reinterpret_cast<uint32_t*>(outlineBuffer.data())[i] =  backgroundColor.colorValue;
 
             destOutline.buffer = outlineBuffer.data();
-            destOutline.width = destWidth;
-            destOutline.height = destHeight;
+            destOutline.width = mesaureResult.rect.GetWidth();
+            destOutline.height = mesaureResult.rect.GetHeight();
             destOutline.pixelSizeInbytes = destPixelSize;
             destOutline.rowPitch = destRowPitch;
         }
 
 
-        BlitBox  dest = {};
+        BlitBox  dest {};
         dest.buffer = textBuffer.data();
-        dest.width = destWidth;
-        dest.height = destHeight;
+        dest.width = mesaureResult.rect.GetWidth();
+        dest.height = mesaureResult.rect.GetHeight();
         dest.pixelSizeInbytes = destPixelSize;
         dest.rowPitch = destRowPitch;
 
-        int penX = static_cast<int>(OutlineWidth);
-        int penY = 0;
+        
+        int penX = -mesaureResult.rect.LeftTop().x;
+        int penY = -mesaureResult.rect.LeftTop().y;
+
         int rowHeight = static_cast<int>(mesaureResult.rowHeight);
         FT_Face face = font->GetFace();
 
+        vector<FormattedTextEntry> formattedText = MetaText::GetFormattedText(text);
+
         for (const FormattedTextEntry& el : formattedText)
         {
-            for (const decltype(el.text)::value_type& e : el.text)
+            std::u32string visualText = bidi_string(el.text.c_str());
+            for (const decltype(el.text)::value_type& codepoint : visualText)
             {
-                if (e == L'\n')
+                if (codepoint == L'\n')
                 {
-                    penY += rowHeight;
-                    penX = static_cast<int>(OutlineWidth);
+                    penX = static_cast<int>(-mesaureResult.rect.LeftTop().x);
+                    penY += mesaureResult.rowHeight;
                     continue;
                 }
 
-                int codePoint = e; // CodePoint::codepoint(multiBytesCodePOint);
-                const FT_UInt glyph_index = FT_Get_Char_Index(face, static_cast<FT_ULong>(codePoint));
+                const FT_UInt glyph_index = FT_Get_Char_Index(face, codepoint);
                 if (FT_Error error = FT_Load_Glyph(
                     face,          /* handle to face object */
                     glyph_index,   /* glyph index           */
@@ -249,7 +277,7 @@ namespace FreeType
                     FT_Stroker stroker = GetStroker();
 
                     //  2 * 64 result in 2px outline
-                    FT_Stroker_Set(stroker, static_cast<FT_Fixed>(OutlineWidth * 64), FT_STROKER_LINECAP_SQUARE, FT_STROKER_LINEJOIN_BEVEL, 0);
+                    FT_Stroker_Set(stroker, static_cast<FT_Fixed>(OutlineWidth * 64), FT_STROKER_LINECAP_ROUND, FT_STROKER_LINEJOIN_BEVEL, 0);
                     FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT);
                     FT_Glyph glyph;
                     FT_Get_Glyph(face->glyph, &glyph);
@@ -257,7 +285,7 @@ namespace FreeType
                     FT_Glyph_To_Bitmap(&glyph, FT_RENDER_MODE_NORMAL, nullptr, true);
                     FT_BitmapGlyph bitmapGlyph = reinterpret_cast<FT_BitmapGlyph>(glyph);
                     FreeTypeRenderer::BitmapProperties bitmapProperties = FreeTypeRenderer::GetBitmapGlyphProperties(bitmapGlyph->bitmap);
-
+               
                     LLUtils::Buffer rasterizedGlyph = FreeTypeRenderer::RenderGlyphToBuffer({ bitmapGlyph , backgroundColor,outlineColor, bitmapProperties });
 
                     BlitBox source = {};
@@ -268,7 +296,7 @@ namespace FreeType
                     source.rowPitch = destPixelSize * bitmapProperties.width;
 
                     destOutline.left = static_cast<uint32_t>(penX + bitmapGlyph->left);
-                    destOutline.top = static_cast<uint32_t>(rowHeight + penY + mesaureResult.descender - bitmapGlyph->top);
+                    destOutline.top = mesaureResult.rowHeight - bitmapGlyph->bitmap.rows + penY + OutlineWidth;
                     BlitBox::Blit(destOutline, source);
 
                     FT_Done_Glyph(glyph);
@@ -302,16 +330,14 @@ namespace FreeType
                     source.pixelSizeInbytes = destPixelSize;
                     source.rowPitch = destPixelSize * bitmapProperties.width;
 
-                    //TODO:: remove std::max and render properly negative x coordinates.
-
-                    dest.left = static_cast<uint32_t>(penX + std::max<int>(0, bitmapGlyph->left));
-                    dest.top = static_cast<uint32_t>(rowHeight + penY + mesaureResult.descender - std::max<int>(0, bitmapGlyph->top));
+                    dest.left = penX +  bitmapGlyph->left;
+                    dest.top = mesaureResult.rowHeight - bitmapGlyph->bitmap.rows + penY ;
                     FT_GlyphSlot  slot = face->glyph;
                     penX += slot->advance.x >> 6;
 
                     FT_Done_Glyph(glyph);
 
-                    BlitBox::Blit(dest, source);
+                   BlitBox::Blit(dest, source);
                 }
             }
         }
@@ -326,8 +352,8 @@ namespace FreeType
             BlitBox::Blit(destOutline, dest);
         }
 
-        out_bitmap.width = destWidth;
-        out_bitmap.height = destHeight;
+        out_bitmap.width = mesaureResult.rect.GetWidth();
+        out_bitmap.height = mesaureResult.rect.GetHeight();
         out_bitmap.buffer = renderOutline ? std::move(outlineBuffer) : std::move(textBuffer);
         out_bitmap.PixelSize = destPixelSize;
         out_bitmap.rowPitch = destRowPitch;

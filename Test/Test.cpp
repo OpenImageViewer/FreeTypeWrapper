@@ -33,18 +33,24 @@ SOFTWARE.
 int main()
 {
 	using namespace FreeType;
-	
+	using namespace LLUtils;
 	FreeTypeConnector::TextCreateParams params{};
 	params.DPIx = 120;
 	params.DPIy = 120;
-	/*params.fontPath = L"C:/Windows/Fonts/consola.ttf";*/
-	params.fontPath = L"E:/Downloads/unifont-13.0.06.ttf";
+	//params.fontPath = L"C:/Windows/Fonts/consola.ttf";
+	params.fontPath = L"C:/Windows/Fonts/segoeui.ttf";
+	
 	
 
 	params.fontSize = 16;
-	params.outlineWidth = 0;
-	params.backgroundColor = LLUtils::Colors::Darkblue_gray;
-	params.text = L"<textcolor=#00ff00> שלום כיתה א";
+	params.outlineWidth = 2;
+
+	params.outlineColor = Colors::Darkmagenta;
+	params.backgroundColor = Colors::AbsoluteZero; ; 
+
+	
+	params.text = L"<textcolor=#00ff00ff>|This| is זה משהו\n באמת משהו\nabcdefghijklmnopqrstuvwwxyz\nABCDEFGHIJKLMNOPQVWXYZ\n|!#_+";
+	
 	params.renderMode = FreeTypeConnector::RenderMode::Antialiased;
 
 
@@ -52,7 +58,7 @@ int main()
 	FreeTypeConnector::GetSingleton().CreateBitmap(params, textBitmap);
 
 	BitmapBuffer bitmapBuffer{ textBitmap.buffer.data()
-		,32
+		,textBitmap.PixelSize * CHAR_BIT
 		,textBitmap.width
 		, textBitmap.height
 			, textBitmap.rowPitch

@@ -54,10 +54,7 @@ namespace FreeType
 
         // Fill glyph background with background color.
         uint32_t* RGBABitmapPtr = reinterpret_cast<uint32_t*>(RGBABitmap.data());
-        for (uint32_t i = 0; i < widthInPixels * HeightInPixels; i++)
-        {
-            RGBABitmapPtr[i] = backgroudColor.colorValue;
-        }
+        memset(RGBABitmapPtr, 0, RGBABitmap.size());
 
         uint32_t sourceRowStart = 0;
 
