@@ -55,9 +55,6 @@ namespace FreeType
 
         void SaveToFile(const std::wstring& fileName)
         {
-            BITMAPFILEHEADER dd;
-            BITMAPINFOHEADER ddf;
-
             BitmapFileHeader fileHeader{};
             fileHeader.bfType = 0x4D42; // "BM"
             fileHeader.bfOffBits = sizeof(BitmapFileHeader) + sizeof(BitmapInfoHeader);

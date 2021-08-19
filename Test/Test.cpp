@@ -35,24 +35,47 @@ int main()
 	using namespace FreeType;
 	using namespace LLUtils;
 	FreeTypeConnector::TextCreateParams params{};
-	params.DPIx = 120;
-	params.DPIy = 120;
-	//params.fontPath = L"C:/Windows/Fonts/consola.ttf";
-	params.fontPath = L"C:/Windows/Fonts/segoeui.ttf";
-	
-	
 
-	params.fontSize = 16;
-	params.outlineWidth = 2;
+	/*{
+		params.DPIx = 120;
+		params.DPIy = 120;
+		params.fontPath = L"C:/Windows/Fonts/segoeuib.ttf";
+		params.text = L"<textcolor=#00ff00ff>|This| is זה משהו\n באמת משהו\nabcdefghijklmnopqrstuvwwxyz\nABCDEFGHIJKLMNOPQVWXYZ\n|!#_+";
 
-	params.outlineColor = Colors::Darkmagenta;
-	params.backgroundColor = Colors::AbsoluteZero; ; 
+		params.text = L"<textcolor=#4a80e2>Welcome to <textcolor=#dd0f1d>OIV\n"\
+			"<textcolor=#25bc25>Drag <textcolor=#4a80e2>here an image to start\n"\
+			"Press <textcolor=#25bc25>F1<textcolor=#4a80e2> to show key bindings";
 
-	
-	params.text = L"<textcolor=#00ff00ff>|This| is זה משהו\n באמת משהו\nabcdefghijklmnopqrstuvwwxyz\nABCDEFGHIJKLMNOPQVWXYZ\n|!#_+";
-	
-	params.renderMode = FreeTypeConnector::RenderMode::Antialiased;
 
+		params.backgroundColor = LLUtils::Colors::White;
+		params.fontSize = 44;
+		params.renderMode = FreeTypeConnector::RenderMode::SubpixelAntiAliased;
+		params.outlineWidth = 3;
+		params.padding = 0;
+	}*/
+
+	{
+		//params.text = L"3000 X 1712 X 32 BPP | loaded in 92.7 ms";
+	/*	params.text = L"Texel: 1218.3 X  584.6";
+		params.fontPath = L"C:/Windows/Fonts/consola.ttf";
+		params.renderMode = FreeTypeConnector::RenderMode::SubpixelAntiAliased;
+		params.fontSize = 11;
+		params.backgroundColor = { 255, 255, 255, 192 };
+		params.DPIx = 120;
+		params.DPIy = 120;*/
+		//params.padding = 1;
+	}
+
+	{
+		params.text = L"<textcolor=#ff8930>windowed";
+		params.fontPath = L"C:/Windows/Fonts/segoeuib.ttf";
+		params.renderMode = FreeTypeConnector::RenderMode::SubpixelAntiAliased;
+		params.fontSize = 11;
+		params.backgroundColor = { 255, 255, 255, 192 };
+		params.DPIx = 120;
+		params.DPIy = 120;
+		params.padding = 0;
+	}
 
 	FreeTypeConnector::Bitmap textBitmap;
 	FreeTypeConnector::GetSingleton().CreateBitmap(params, textBitmap);

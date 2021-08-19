@@ -45,7 +45,8 @@ namespace FreeType
 
     std::string FreeTypeConnector::GenerateFreeTypeErrorString(std::string userMessage, FT_Error  error)
     {
-        return std::string("FreeType error: " + std::to_string(error) + ", " + userMessage);
+        using namespace std::string_literals;
+        return "FreeType error: "s + FT_Error_String(error) + ", " + userMessage;
     }
 
     template <typename string_type>
@@ -123,10 +124,11 @@ namespace FreeType
                 mesureResult.rect.LeftTop().y = std::min<int>(mesureResult.rect.LeftTop().y, face->glyph->bitmap_top + penY);
 
                 mesureResult.rect.RightBottom().x = std::max<int>(mesureResult.rect.RightBottom().x, face->glyph->bitmap_left + face->glyph->bitmap.width + penX);
-                mesureResult.rect.RightBottom().y = std::max<int>(mesureResult.rect.RightBottom().y, rowHeight - face->glyph->bitmap.rows + face->glyph->bitmap_top + penY);
 
                 penX += face->glyph->advance.x >> 6;
             }
+
+            mesureResult.rect.RightBottom().y = rowHeight * numberOfLines;
         }
 
 
@@ -190,11 +192,20 @@ namespace FreeType
         TextMesureParams params;
         params.createParams = textCreateParams;
 
+        const FT_Render_Mode textRenderMOde = (renderMode == RenderMode::SubpixelAntiAliased ? FT_RENDER_MODE_LCD : FT_RENDER_MODE_NORMAL);
+
         TextMesureResult mesaureResult;
 
         MesaureText(params, mesaureResult);
+
+		//TODO: is it the right way to calculate the extra width created by the anti-aliasing ?
+        if (textRenderMOde == FT_RENDER_MODE_LCD)
+        {
+            mesaureResult.rect.RightBottom().x += 1;
+            mesaureResult.rect.LeftTop().x -= 1;
+        }
         
-        mesaureResult.rect = mesaureResult.rect.Infalte(OutlineWidth * 2 , OutlineWidth * 2);
+        mesaureResult.rect = mesaureResult.rect.Infalte(OutlineWidth * 2  + params.createParams.padding * 2, OutlineWidth * 2 + params.createParams.padding * 2);
 
         const uint32_t destPixelSize = 4;
         const uint32_t destRowPitch = mesaureResult.rect.GetWidth() * destPixelSize;
@@ -214,7 +225,6 @@ namespace FreeType
             reinterpret_cast<uint32_t*>(textBuffer.data())[i] = textBackgroundBuffer.colorValue;
 
 
-        const FT_Render_Mode textRenderMOde = (renderMode == RenderMode::SubpixelAntiAliased ? FT_RENDER_MODE_LCD : FT_RENDER_MODE_NORMAL);
 
         LLUtils::Buffer outlineBuffer;
         BlitBox  destOutline = {};
@@ -244,8 +254,10 @@ namespace FreeType
         int penX = -mesaureResult.rect.LeftTop().x;
         int penY = -mesaureResult.rect.LeftTop().y;
 
-        int rowHeight = static_cast<int>(mesaureResult.rowHeight);
+        
         FT_Face face = font->GetFace();
+        auto descender = face->size->metrics.descender >> 6;
+        int rowHeight = mesaureResult.rowHeight;
 
         vector<FormattedTextEntry> formattedText = MetaText::GetFormattedText(text);
 
@@ -257,7 +269,7 @@ namespace FreeType
                 if (codepoint == L'\n')
                 {
                     penX = static_cast<int>(-mesaureResult.rect.LeftTop().x);
-                    penY += mesaureResult.rowHeight;
+                    penY += rowHeight;
                     continue;
                 }
 
@@ -270,9 +282,12 @@ namespace FreeType
                     LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, GenerateFreeTypeErrorString("can not Load glyph", error));
                 }
 
+                auto baseVerticalPos = rowHeight + penY + descender;
+				
+                //Render outline
+
                 if (renderOutline) // render outline
                 {
-
                     //initialize stroker, so you can create outline font
                     FT_Stroker stroker = GetStroker();
 
@@ -282,7 +297,7 @@ namespace FreeType
                     FT_Glyph glyph;
                     FT_Get_Glyph(face->glyph, &glyph);
                     FT_Glyph_StrokeBorder(&glyph, stroker, false, true);
-                    FT_Glyph_To_Bitmap(&glyph, FT_RENDER_MODE_NORMAL, nullptr, true);
+                    FT_Glyph_To_Bitmap(&glyph, textRenderMOde, nullptr, true);
                     FT_BitmapGlyph bitmapGlyph = reinterpret_cast<FT_BitmapGlyph>(glyph);
                     FreeTypeRenderer::BitmapProperties bitmapProperties = FreeTypeRenderer::GetBitmapGlyphProperties(bitmapGlyph->bitmap);
                
@@ -296,21 +311,18 @@ namespace FreeType
                     source.rowPitch = destPixelSize * bitmapProperties.width;
 
                     destOutline.left = static_cast<uint32_t>(penX + bitmapGlyph->left);
-                    destOutline.top = mesaureResult.rowHeight - bitmapGlyph->bitmap.rows + penY + OutlineWidth;
+                    destOutline.top = baseVerticalPos - bitmapGlyph->top;
                     BlitBox::Blit(destOutline, source);
 
                     FT_Done_Glyph(glyph);
 
                 }
-
+                // Render text
                 if (renderText)
                 {
-
                     FT_Glyph glyph;
                     if (FT_Error error = FT_Get_Glyph(face->glyph, &glyph))
                         LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, "FreeType error, unable to render glyph");
-
-
 
                     if (glyph->format != FT_GLYPH_FORMAT_BITMAP)
                     {
@@ -331,7 +343,7 @@ namespace FreeType
                     source.rowPitch = destPixelSize * bitmapProperties.width;
 
                     dest.left = penX +  bitmapGlyph->left;
-                    dest.top = mesaureResult.rowHeight - bitmapGlyph->bitmap.rows + penY ;
+                    dest.top = baseVerticalPos - bitmapGlyph->top;
                     FT_GlyphSlot  slot = face->glyph;
                     penX += slot->advance.x >> 6;
 

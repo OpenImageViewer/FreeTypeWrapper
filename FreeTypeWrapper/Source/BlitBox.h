@@ -15,7 +15,6 @@ namespace FreeType
         uint32_t GetStartOffset() const
         {
             return (top * rowPitch) + (left * pixelSizeInbytes);
-
         }
 
         static void Blit(BlitBox& dst, const BlitBox& src)
@@ -29,7 +28,6 @@ namespace FreeType
             {
                 LL_EXCEPTION(LLUtils::Exception::ErrorCode::LogicError, "Target Out of bounds ");
             }
-
 
             const uint32_t bytesPerLine = src.pixelSizeInbytes * src.width;
 

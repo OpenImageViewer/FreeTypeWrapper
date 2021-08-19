@@ -26,11 +26,6 @@ namespace FreeType
 
     class FreeTypeConnector : public LLUtils::Singleton<FreeTypeConnector>
     {
-
-        ///*** workaround to solve***
-
-        static const size_t ExtraWidth = 2;
-
         friend class LLUtils::Singleton<FreeTypeConnector>;
     public:
         ~FreeTypeConnector();
@@ -46,7 +41,7 @@ namespace FreeType
 
         enum class RenderMode
         {
-            Default
+              Default
             , Antialiased
             , SubpixelAntiAliased
         };
@@ -62,6 +57,7 @@ namespace FreeType
             RenderMode renderMode;
             uint16_t DPIx;
             uint16_t DPIy;
+            uint16_t padding;
         };
 
         struct TextMesureParams
@@ -85,7 +81,7 @@ namespace FreeType
         FreeTypeConnector();
         FreeTypeFont* GetOrCreateFont(const std::wstring& fontPath);
         FT_Stroker GetStroker();
-        std::string GenerateFreeTypeErrorString(std::string userMessage, FT_Error error);
+        static std::string GenerateFreeTypeErrorString(std::string userMessage, FT_Error error);
         void MesaureText(const TextMesureParams& measureParams, TextMesureResult& out_result);
 
 

@@ -27,7 +27,7 @@ namespace FreeType
             props.fData = rasterizedText.buffer.Clone();
             props.fProperties.RowPitchInBytes = rasterizedText.rowPitch;
             props.fProperties.Width = rasterizedText.width;
-            props.fProperties.TexelFormatDecompressed = TexelFormat::I_R8_G8_B8_A8;
+            props.fProperties.TexelFormatDecompressed = TexelFormat::I_A8_B8_G8_R8;
             ImageSharedPtr textImage = ImageSharedPtr(new Image(props));
             return textImage;
         }

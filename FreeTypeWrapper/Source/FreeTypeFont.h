@@ -16,11 +16,8 @@ namespace FreeType
                 LL_EXCEPTION(LLUtils::Exception::ErrorCode::InvalidState, "Font file path must be specified");
 
             FT_Error error = FT_New_Face(fLibrary, LLUtils::StringUtility::ToAString(fName).c_str(), 0, &fFace);
-            if (error == FT_Err_Unknown_File_Format)
-                LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, "FreeType error Unknown file format");
-            else if (error)
-                LL_EXCEPTION(LLUtils::Exception::ErrorCode::Unknown, "FreeType unkown error Unknown file format");
-
+            if (error)
+                LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, FT_Error_String(error));
         }
         ~FreeTypeFont()
         {
