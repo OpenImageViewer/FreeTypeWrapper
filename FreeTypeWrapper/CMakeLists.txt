@@ -14,6 +14,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(TargetName FreeTypeWrapper)
 
 add_subdirectory(./External/freetype2)
+
+option(FRIBIDI_ENABLE_DEBUG OFF)
+
 add_subdirectory(./External/fribidi)
 
 add_library(${TargetName} ${sourceFiles})
