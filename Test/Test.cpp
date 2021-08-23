@@ -26,6 +26,7 @@ SOFTWARE.
 #include <FreeTypeWrapper/FreeTypeConnector.h>
 #include <FreeTypeWrapper/BitmapFile.h>
 #include <LLUtils/Colors.h>
+#include <LLUtils/Exception.h>
 
 //button support for multiple keyboards
 
@@ -120,6 +121,26 @@ int main()
 		FreeTypeConnector::Bitmap textBitmap5;
 		FreeTypeConnector::GetSingleton().CreateBitmap(params, textBitmap5);
 		SaveToFile(textBitmap5, L"d:/test4_2.bmp");
+
+		if (textBitmap4.width != textBitmap5.width)
+			LL_EXCEPTION(LLUtils::Exception::ErrorCode::InvalidState, "mismatch size");
+	}
+
+	{
+
+		//test very thick outline 
+		params.text = L"<textcolor=#ff8930>windowed";
+		params.fontPath = L"C:/Windows/Fonts/segoeuib.ttf";
+		params.renderMode = FreeTypeConnector::RenderMode::Antialiased;
+		params.fontSize = 11;
+		params.backgroundColor = { 255, 255, 255, 192 };
+		params.DPIx = 120;
+		params.DPIy = 120;
+		params.padding = 0;
+		params.outlineWidth = 20;
+		FreeTypeConnector::Bitmap textBitmap;
+		FreeTypeConnector::GetSingleton().CreateBitmap(params, textBitmap);
+		SaveToFile(textBitmap, L"d:/test5.bmp");
 	}
 
 	FreeTypeConnector::Bitmap textBitmap;

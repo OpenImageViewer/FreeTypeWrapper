@@ -121,17 +121,15 @@ namespace FreeType
                 penX += face->glyph->advance.x >> 6;
                 
                 // When subpixel antialiasing is enabled, bitmap might be renderd at negative coordinates relative to origin.
-                mesureResult.rect.LeftTop().x = std::min<int>(mesureResult.rect.LeftTop().x, face->glyph->bitmap_left + penX);
+                mesureResult.rect.LeftTop().x = std::min<int>(mesureResult.rect.LeftTop().x, face->glyph->bitmap_left);
                 mesureResult.rect.RightBottom().x = std::max<int>(mesureResult.rect.RightBottom().x, penX);
                 
             }
-
             mesureResult.rect.RightBottom().y = rowHeight * numberOfLines;
-
-            //Add horizontal outline width to the final width.
-            mesureResult.rect = mesureResult.rect.Infalte(measureParams.createParams.outlineWidth * 2,0);
-
         }
+
+        //Add horizontal outline width to the final width, vertical outline width is already factored into rowHeight
+        mesureResult.rect = mesureResult.rect.Infalte(measureParams.createParams.outlineWidth * 2, 0);
         mesureResult.rowHeight = static_cast<uint32_t>(rowHeight);
     }
 
