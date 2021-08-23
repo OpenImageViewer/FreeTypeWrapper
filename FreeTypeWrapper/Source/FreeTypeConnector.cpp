@@ -75,7 +75,8 @@ namespace FreeType
     }
 
 
-    void FreeTypeConnector::MesaureText(const TextMesureParams& measureParams, TextMesureResult& mesureResult)
+    
+    void FreeTypeConnector::MeasureText(const TextMesureParams& measureParams, TextMesureResult& mesureResult)
     {
         using namespace std;
         FreeTypeFont* font = GetOrCreateFont(measureParams.createParams.fontPath);
@@ -92,8 +93,7 @@ namespace FreeType
         int penX = 0;
         int penY = 0;
         int numberOfLines = 1;
-        int maxRowWidth = 0;
-        
+          
         for (const FormattedTextEntry& el : formattedText)
         {
             std::u32string visualText = bidi_string(el.text.c_str());
@@ -103,7 +103,6 @@ namespace FreeType
                 if (codepoint == '\n')
                 {
                     numberOfLines++;
-                    maxRowWidth = (std::max)(penX, maxRowWidth);
                     penX = 0;
                     penY += rowHeight;
                     continue;
@@ -119,24 +118,20 @@ namespace FreeType
                 {
                     LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, GenerateFreeTypeErrorString("can not load glyph", error));
                 }
-                
-                mesureResult.rect.LeftTop().x = std::min<int>(mesureResult.rect.LeftTop().x, face->glyph->bitmap_left + penX);
-                mesureResult.rect.LeftTop().y = std::min<int>(mesureResult.rect.LeftTop().y, face->glyph->bitmap_top + penY);
-
-                mesureResult.rect.RightBottom().x = std::max<int>(mesureResult.rect.RightBottom().x, face->glyph->bitmap_left + face->glyph->bitmap.width + penX);
-
                 penX += face->glyph->advance.x >> 6;
+                
+                // When subpixel antialiasing is enabled, bitmap might be renderd at negative coordinates relative to origin.
+                mesureResult.rect.LeftTop().x = std::min<int>(mesureResult.rect.LeftTop().x, face->glyph->bitmap_left + penX);
+                mesureResult.rect.RightBottom().x = std::max<int>(mesureResult.rect.RightBottom().x, penX);
+                
             }
 
             mesureResult.rect.RightBottom().y = rowHeight * numberOfLines;
+
+            //Add horizontal outline width to the final width.
+            mesureResult.rect = mesureResult.rect.Infalte(measureParams.createParams.outlineWidth * 2,0);
+
         }
-
-
-
-        maxRowWidth = (std::max)(penX, maxRowWidth);
-
-        // Add outline width to the final width of the rasterized text.
-        maxRowWidth += measureParams.createParams.outlineWidth * 2;
         mesureResult.rowHeight = static_cast<uint32_t>(rowHeight);
     }
 
@@ -196,7 +191,7 @@ namespace FreeType
 
         TextMesureResult mesaureResult;
 
-        MesaureText(params, mesaureResult);
+        MeasureText(params, mesaureResult);
 
 		//TODO: is it the right way to calculate the extra width created by the anti-aliasing ?
         if (textRenderMOde == FT_RENDER_MODE_LCD)
@@ -205,7 +200,7 @@ namespace FreeType
             mesaureResult.rect.LeftTop().x -= 1;
         }
         
-        mesaureResult.rect = mesaureResult.rect.Infalte(OutlineWidth * 2  + params.createParams.padding * 2, OutlineWidth * 2 + params.createParams.padding * 2);
+        mesaureResult.rect = mesaureResult.rect.Infalte(params.createParams.padding * 2, params.createParams.padding * 2);
 
         const uint32_t destPixelSize = 4;
         const uint32_t destRowPitch = mesaureResult.rect.GetWidth() * destPixelSize;
@@ -282,7 +277,7 @@ namespace FreeType
                     LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, GenerateFreeTypeErrorString("can not Load glyph", error));
                 }
 
-                auto baseVerticalPos = rowHeight + penY + descender;
+                auto baseVerticalPos = rowHeight + penY + descender - OutlineWidth;
 				
                 //Render outline
 

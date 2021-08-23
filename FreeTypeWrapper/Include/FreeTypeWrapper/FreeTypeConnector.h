@@ -82,7 +82,7 @@ namespace FreeType
         FreeTypeFont* GetOrCreateFont(const std::wstring& fontPath);
         FT_Stroker GetStroker();
         static std::string GenerateFreeTypeErrorString(std::string userMessage, FT_Error error);
-        void MesaureText(const TextMesureParams& measureParams, TextMesureResult& out_result);
+        void MeasureText(const TextMesureParams& measureParams, TextMesureResult& out_result);
 
 
     private:
