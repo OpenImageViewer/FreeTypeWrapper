@@ -70,7 +70,7 @@ int main()
 		params.padding = 0;
 		FreeTypeConnector::Bitmap textBitmap;
 		FreeTypeConnector::GetSingleton().CreateBitmap(params, textBitmap);
-		SaveToFile(textBitmap, L"d:/test1.bmp");
+		SaveToFile(textBitmap, L"f:/test1.bmp");
 	}
 
 	{
@@ -85,7 +85,7 @@ int main()
 		//params.padding = 1;
 		FreeTypeConnector::Bitmap textBitmap;
 		FreeTypeConnector::GetSingleton().CreateBitmap(params, textBitmap);
-		SaveToFile(textBitmap, L"d:/test2.bmp");
+		SaveToFile(textBitmap, L"f:/test2.bmp");
 	}
 
 	{
@@ -99,7 +99,7 @@ int main()
 		params.padding = 0;
 		FreeTypeConnector::Bitmap textBitmap;
 		FreeTypeConnector::GetSingleton().CreateBitmap(params, textBitmap);
-		SaveToFile(textBitmap, L"d:/test3.bmp");
+		SaveToFile(textBitmap, L"f:/test3.bmp");
 	}
 
 	//Test Fixed width font
@@ -115,12 +115,12 @@ int main()
 
 		FreeTypeConnector::Bitmap textBitmap4;
 		FreeTypeConnector::GetSingleton().CreateBitmap(params, textBitmap4);
-		SaveToFile(textBitmap4, L"d:/test4_1.bmp");
+		SaveToFile(textBitmap4, L"f:/test4_1.bmp");
 
 		params.text = L"<textcolor=#ff8930>555";
 		FreeTypeConnector::Bitmap textBitmap5;
 		FreeTypeConnector::GetSingleton().CreateBitmap(params, textBitmap5);
-		SaveToFile(textBitmap5, L"d:/test4_2.bmp");
+		SaveToFile(textBitmap5, L"f:/test4_2.bmp");
 
 		if (textBitmap4.width != textBitmap5.width)
 			LL_EXCEPTION(LLUtils::Exception::ErrorCode::InvalidState, "mismatch size");
@@ -140,11 +140,23 @@ int main()
 		params.outlineWidth = 20;
 		FreeTypeConnector::Bitmap textBitmap;
 		FreeTypeConnector::GetSingleton().CreateBitmap(params, textBitmap);
-		SaveToFile(textBitmap, L"d:/test5.bmp");
+		SaveToFile(textBitmap, L"f:/test5.bmp");
 	}
 
-	FreeTypeConnector::Bitmap textBitmap;
-	FreeTypeConnector::GetSingleton().CreateBitmap(params, textBitmap);
-
+	{
+		//Lower dpi mode
+		params.text = L"abcdefg.tif";
+		params.fontPath = L"C:/Windows/Fonts/segoeuib.ttf";
+		params.renderMode = FreeTypeConnector::RenderMode::Antialiased;
+		params.fontSize = 12;
+		params.backgroundColor = { 255, 255, 255, 192 };
+		params.DPIx = 96;
+		params.DPIy = 96;
+		params.padding = 0;
+		params.outlineWidth = 2;
+		FreeTypeConnector::Bitmap textBitmap;
+		FreeTypeConnector::GetSingleton().CreateBitmap(params, textBitmap);
+		SaveToFile(textBitmap, L"f:/test6.bmp");
+	}
 
 }
