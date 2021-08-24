@@ -192,7 +192,8 @@ namespace FreeType
         MeasureText(params, mesaureResult);
 
 		//TODO: is it the right way to calculate the extra width created by the anti-aliasing ?
-        if (textRenderMOde == FT_RENDER_MODE_LCD)
+        
+        if (textRenderMOde == FT_RENDER_MODE_LCD || textRenderMOde == FT_RENDER_MODE_NORMAL)
         {
             mesaureResult.rect.RightBottom().x += 1;
             mesaureResult.rect.LeftTop().x -= 1;
