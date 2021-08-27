@@ -23,7 +23,7 @@ namespace FreeType
         stringstream ss;
         for (const string_type& prop : properties)
         {
-            stringList trimmedList = StringUtility::split(prop, '=');
+            stringList trimmedList = StringUtility::split(prop, L'=');
 
             if (trimmedList.size() == 2)
             {
@@ -83,10 +83,10 @@ namespace FreeType
             {
                 if (endTag != -1)
                 {
-                    string_type tagContents = text.substr(beginTag, endTag - beginTag + 1);
+                    string_type tagContents = text.substr(static_cast<size_t>(beginTag), static_cast<size_t>(endTag - beginTag + 1));
 
-                    string_type textInsideTag = text.substr(endTag + 1, i - (endTag + 1));
-                    beginTag = i;
+                    string_type textInsideTag = text.substr(static_cast<size_t>(endTag + 1), static_cast<size_t>(i - (endTag + 1)));
+                    beginTag = static_cast<ptrdiff_t>(i);
                     endTag = -1;
 
                     FormattedTextEntry entry = FormattedTextEntry::Parse(tagContents, textInsideTag);
@@ -95,14 +95,14 @@ namespace FreeType
                 }
                 else
                 {
-                    beginTag = i;
+                    beginTag = static_cast<ptrdiff_t>(i);
                 }
 
 
             }
             if (text[i] == '>')
             {
-                endTag = i;
+                endTag = static_cast<ptrdiff_t>(i);
             }
         }
 
@@ -115,10 +115,10 @@ namespace FreeType
         }
         else
         {
-            ptrdiff_t i = text.length() - 1;
-            string_type tagContents = text.substr(beginTag, endTag - beginTag + 1);
+            ptrdiff_t i = static_cast<ptrdiff_t>(text.length() - 1);
+            string_type tagContents = text.substr(static_cast<size_t>(beginTag), static_cast<size_t>(endTag - beginTag + 1));
 
-            string_type textInsideTag = text.substr(endTag + 1, i - endTag);
+            string_type textInsideTag = text.substr(static_cast<size_t>(endTag + 1), static_cast<size_t>(i - endTag));
             beginTag = i;
             endTag = -1;
 

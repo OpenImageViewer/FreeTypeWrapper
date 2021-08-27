@@ -36,9 +36,10 @@ namespace FreeType
                 for (uint32_t x = 0; x < bytesPerLine; x += 4)
                 {
                     using namespace LLUtils;
-                    Color srcColor(*reinterpret_cast<const uint32_t*>(srcPos + x));
-                    Color dstColor(*reinterpret_cast<const uint32_t*>(dstPos + x));
-                    *reinterpret_cast<uint32_t*>(dstPos + x) = dstColor.Blend(srcColor).colorValue;
+
+                    const Color& srcColor = *reinterpret_cast<const Color*>(srcPos + x);
+                    Color& dstColor = *reinterpret_cast<Color*>(dstPos + x);
+                    dstColor = dstColor.Blend(srcColor);
                 }
                 dstPos += dst.rowPitch;
                 srcPos += src.rowPitch;

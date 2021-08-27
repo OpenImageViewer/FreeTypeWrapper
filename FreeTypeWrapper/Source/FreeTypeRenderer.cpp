@@ -43,17 +43,14 @@ namespace FreeType
         const int destPixelSize = 4;
         const uint32_t HeightInPixels = params.bitmapProperties.height;
         const uint32_t widthInPixels = params.bitmapProperties.width;
-
-        LLUtils::Color backgroudColor = params.backgroudColor;
+        
         LLUtils::Color textColor = params.textColor;
-
-
 
         const size_t bufferSize = widthInPixels * HeightInPixels * destPixelSize;
         LLUtils::Buffer RGBABitmap(bufferSize);
 
         // Fill glyph background with background color.
-        uint32_t* RGBABitmapPtr = reinterpret_cast<uint32_t*>(RGBABitmap.data());
+        LLUtils::Color* RGBABitmapPtr = reinterpret_cast<LLUtils::Color*>(RGBABitmap.data());
         memset(RGBABitmapPtr, 0, RGBABitmap.size());
 
         uint32_t sourceRowStart = 0;
@@ -70,9 +67,9 @@ namespace FreeType
                 switch (params.bitmapProperties.numChannels)
                 {
                 case 1: // MONOCHROME
-                    R = params.textColor.R;
-                    G = params.textColor.G;
-                    B = params.textColor.B;
+                    R = params.textColor.R();
+                    G = params.textColor.G();
+                    B = params.textColor.B();
                     A = bitmap.buffer[sourceRowStart + x + 0];
                     break;
 
@@ -84,9 +81,9 @@ namespace FreeType
                     uint8_t GC = bitmap.buffer[currentPixelPos + 1];
                     uint8_t RC = bitmap.buffer[currentPixelPos + 2];
 
-                    R = (textColor.R * RC) / 0xFF;
-                    G = (textColor.G * GC) / 0xFF;
-                    B = (textColor.B * BC) / 0xFF;
+                    R = (textColor.R() * RC) / 0xFF;
+                    G = (textColor.G() * GC) / 0xFF;
+                    B = (textColor.B() * BC) / 0xFF;
 
                     A = (RC + GC + BC) / 3;
                 }
@@ -97,7 +94,7 @@ namespace FreeType
 
 
                 LLUtils::Color source(R, G, B, A);
-                RGBABitmapPtr[destPos] = LLUtils::Color(RGBABitmapPtr[destPos]).Blend(source).colorValue;
+                RGBABitmapPtr[destPos] = LLUtils::Color(RGBABitmapPtr[destPos]).Blend(source);
             }
 
             sourceRowStart += params.bitmapProperties.rowpitchInBytes;

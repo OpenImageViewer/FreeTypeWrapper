@@ -55,7 +55,6 @@ namespace FreeType
         FriBidiParType base = FRIBIDI_PAR_ON;
         FriBidiStrIndex* ltov, * vtol;
         FriBidiLevel* levels;
-        FriBidiStrIndex new_len;
         fribidi_boolean log2vis;
         std::u32string logicalUTF32 = ww898::utf::convz<char32_t>(logical);
         std::u32string visualUTF32(logicalUTF32.length(), 0);
@@ -98,7 +97,7 @@ namespace FreeType
         {
             std::u32string visualText = bidi_string(el.text.c_str());
             
-            for (const decltype(el.text)::value_type& codepoint : visualText)
+            for (const decltype(visualText)::value_type& codepoint : visualText)
             {
                 if (codepoint == '\n')
                 {
@@ -212,11 +211,11 @@ namespace FreeType
         //// when rendering with outline, the outline buffer is the final buffer, otherwise the text buffer is the final buffer.
         //Reset final text buffer to background color.
 
-        LLUtils::Color textBackgroundBuffer = renderOutline ? 0 : backgroundColor.colorValue;
+        LLUtils::Color textBackgroundBuffer = renderOutline ? 0 : backgroundColor;
         
 
         for (uint32_t i = 0; i < mesaureResult.rect.GetWidth() * mesaureResult.rect.GetHeight(); i++)
-            reinterpret_cast<uint32_t*>(textBuffer.data())[i] = textBackgroundBuffer.colorValue;
+            reinterpret_cast<LLUtils::Color*>(textBuffer.data())[i] = textBackgroundBuffer;
 
 
 
@@ -227,7 +226,7 @@ namespace FreeType
             outlineBuffer.Allocate(sizeOfDestBuffer);
             //Reset outline buffer to background color.
             for (uint32_t i = 0; i < mesaureResult.rect.GetWidth() * mesaureResult.rect.GetHeight(); i++)
-                reinterpret_cast<uint32_t*>(outlineBuffer.data())[i] =  backgroundColor.colorValue;
+                reinterpret_cast<LLUtils::Color*>(outlineBuffer.data())[i] =  backgroundColor;
 
             destOutline.buffer = outlineBuffer.data();
             destOutline.width = mesaureResult.rect.GetWidth();
@@ -258,7 +257,7 @@ namespace FreeType
         for (const FormattedTextEntry& el : formattedText)
         {
             std::u32string visualText = bidi_string(el.text.c_str());
-            for (const decltype(el.text)::value_type& codepoint : visualText)
+            for (const decltype(visualText)::value_type& codepoint : visualText)
             {
                 if (codepoint == L'\n')
                 {

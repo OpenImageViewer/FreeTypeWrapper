@@ -64,8 +64,8 @@ namespace FreeType
             uint32_t rowPitch = fBitmapBuffer.bitsPerPixel * fBitmapBuffer.width / CHAR_BIT;
 
             infoHeader.biBitCount = static_cast<uint16_t>(fBitmapBuffer.bitsPerPixel);
-            infoHeader.biHeight = fBitmapBuffer.height;
-            infoHeader.biWidth = fBitmapBuffer.width;
+            infoHeader.biHeight = static_cast<int32_t>(fBitmapBuffer.height);
+            infoHeader.biWidth = static_cast<int32_t>(fBitmapBuffer.width);
             infoHeader.biPlanes = 1;
             infoHeader.biSize = 40;
             infoHeader.biSizeImage = rowPitch * fBitmapBuffer.height;
@@ -80,11 +80,13 @@ namespace FreeType
 
                 for (uint32_t x = 0; x < fBitmapBuffer.width; x++)
                 {
-                    auto RGBA = reinterpret_cast<const uint32_t*>(sourceRow)[x];
-                    LLUtils::Color c(RGBA);
-                    std::swap(c.R, c.B);
+                    LLUtils::Color color = reinterpret_cast<const LLUtils::Color*>(sourceRow)[x];
+					
+					// Color class channel order layout is RGBA, Windows bitmap color channel order is BGRA.
+					// swap R and B before writing to disk.
+                    std::swap(color.R(), color.B());
                     
-                    reinterpret_cast<uint32_t*>(destRow)[x] = _byteswap_ulong(c.colorValue);
+                    reinterpret_cast<LLUtils::Color*>(destRow)[x] = color;
                 }
             }
 
