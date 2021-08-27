@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 20)
      "./Source/*.h"
      "./Source/*.cpp"
  )
-
+ 
 #set(External ./External)
 #set(FreeTypePath ./External/freetype2)
 #set(FreeTypeOutput ./ExternalBuild/freetype2)
@@ -16,6 +16,9 @@ set(TargetName FreeTypeWrapper)
 add_subdirectory(./External/freetype2)
 
 option(FRIBIDI_ENABLE_DEBUG OFF)
+option(FRIBIDI_BUILD_TESTS OFF)
+option(FRIBIDI_BUILD_BIN OFF)
+
 
 add_subdirectory(./External/fribidi)
 

@@ -9,4 +9,4 @@
 	url = https://github.com/ww898/utf-cpp.git
 [submodule "FreeTypeWrapper/External/fribidi"]
 	path = FreeTypeWrapper/External/fribidi
-	url = https://github.com/tamaskenez/fribidi-cmake.git
+	url = https://github.com/OpenImageViewer/fribidi.git
