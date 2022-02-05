@@ -51,6 +51,50 @@ int main()
 	using namespace FreeType;
 	using namespace LLUtils;
 	FreeTypeConnector::TextCreateParams params{};
+	std::filesystem::path folderToSaveFiles = "d:/testImages";
+
+	//Several test cases, for now mostly checks for out of bounds errors, if there's no exceptions test is considered passed.
+
+	{
+		params.DPIx = 120;
+		params.DPIy = 120;
+		params.fontPath = L"C:/Windows/Fonts/segoeuib.ttf";
+		params.text = L"ijkjojujrjaj";
+		params.textColor = LLUtils::Colors::Black;
+		params.backgroundColor = LLUtils::Colors::White;
+		params.fontSize = 44;
+		params.renderMode = FreeTypeConnector::RenderMode::Antialiased;
+		params.outlineWidth = 0;
+	
+
+		FreeTypeConnector::Bitmap textBitmap;
+		FreeTypeConnector::GetSingleton().CreateBitmap(params, textBitmap);
+		SaveToFile(textBitmap, folderToSaveFiles / "test10.bmp");
+		return 0;
+	}
+
+
+	{
+		params.DPIx = 120;
+		params.DPIy = 120;
+		params.fontPath = L"C:/Windows/Fonts/segoeui.ttf";
+		params.text = L"<textcolor=#000000ff>|This| is זה משהו\n באמת משהו\nabcdefghijklmnopqrstuvwwxyz\nABCDEFGHIJKLMNOPQVWXYZ\n|!#_+";
+
+		params.backgroundColor = LLUtils::Colors::White;
+		params.fontSize = 44;
+		params.renderMode = FreeTypeConnector::RenderMode::Antialiased;
+		params.outlineWidth = 0;
+		params.padding = 0;
+		params.flags = FreeTypeConnector::TextCreateFlags::UseMetaText |
+			FreeTypeConnector::TextCreateFlags::Bidirectional;
+
+		FreeTypeConnector::Bitmap textBitmap;
+		FreeTypeConnector::GetSingleton().CreateBitmap(params, textBitmap);
+		SaveToFile(textBitmap, folderToSaveFiles / "test.bmp");
+
+
+	}
+
 	//Several test cases, for now mostly checks for out of bounds errors, if there's no exceptions test is considered passed.
 	{
 		params.DPIx = 120;
@@ -68,9 +112,13 @@ int main()
 		params.renderMode = FreeTypeConnector::RenderMode::Antialiased;
 		params.outlineWidth = 3;
 		params.padding = 0;
+		params.flags = FreeTypeConnector::TextCreateFlags::UseMetaText |
+			FreeTypeConnector::TextCreateFlags::Bidirectional;
+
 		FreeTypeConnector::Bitmap textBitmap;
 		FreeTypeConnector::GetSingleton().CreateBitmap(params, textBitmap);
-		SaveToFile(textBitmap, L"f:/test1.bmp");
+		SaveToFile(textBitmap, folderToSaveFiles / "test1.bmp");
+
 	}
 
 	{
@@ -85,7 +133,7 @@ int main()
 		//params.padding = 1;
 		FreeTypeConnector::Bitmap textBitmap;
 		FreeTypeConnector::GetSingleton().CreateBitmap(params, textBitmap);
-		SaveToFile(textBitmap, L"f:/test2.bmp");
+		SaveToFile(textBitmap, folderToSaveFiles / "test2.bmp");
 	}
 
 	{
@@ -99,7 +147,7 @@ int main()
 		params.padding = 0;
 		FreeTypeConnector::Bitmap textBitmap;
 		FreeTypeConnector::GetSingleton().CreateBitmap(params, textBitmap);
-		SaveToFile(textBitmap, L"f:/test3.bmp");
+		SaveToFile(textBitmap, folderToSaveFiles / "test3.bmp");
 	}
 
 	//Test Fixed width font
@@ -115,12 +163,12 @@ int main()
 
 		FreeTypeConnector::Bitmap textBitmap4;
 		FreeTypeConnector::GetSingleton().CreateBitmap(params, textBitmap4);
-		SaveToFile(textBitmap4, L"f:/test4_1.bmp");
+		SaveToFile(textBitmap4, folderToSaveFiles / "test4_1.bmp");
 
 		params.text = L"<textcolor=#ff8930>555";
 		FreeTypeConnector::Bitmap textBitmap5;
 		FreeTypeConnector::GetSingleton().CreateBitmap(params, textBitmap5);
-		SaveToFile(textBitmap5, L"f:/test4_2.bmp");
+		SaveToFile(textBitmap5, folderToSaveFiles / "test4_2.bmp");
 
 		if (textBitmap4.width != textBitmap5.width)
 			LL_EXCEPTION(LLUtils::Exception::ErrorCode::InvalidState, "mismatch size");
@@ -140,7 +188,7 @@ int main()
 		params.outlineWidth = 20;
 		FreeTypeConnector::Bitmap textBitmap;
 		FreeTypeConnector::GetSingleton().CreateBitmap(params, textBitmap);
-		SaveToFile(textBitmap, L"f:/test5.bmp");
+		SaveToFile(textBitmap, folderToSaveFiles / "test5.bmp");
 	}
 
 	{
@@ -156,7 +204,7 @@ int main()
 		params.outlineWidth = 2;
 		FreeTypeConnector::Bitmap textBitmap;
 		FreeTypeConnector::GetSingleton().CreateBitmap(params, textBitmap);
-		SaveToFile(textBitmap, L"f:/test6.bmp");
+		SaveToFile(textBitmap, folderToSaveFiles  / "test6.bmp");
 	}
 
 }

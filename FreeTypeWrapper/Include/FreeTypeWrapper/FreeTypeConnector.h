@@ -8,6 +8,7 @@
 #include <LLUtils/Buffer.h>
 #include <LLUtils/Singleton.h>
 #include <LLUtils/Rect.h>
+#include <LLUtils/EnumClassBitwise.h>
 
 
 #pragma region FreeType forward declerations
@@ -46,11 +47,23 @@ namespace FreeType
             , SubpixelAntiAliased
         };
 
+        enum class TextCreateFlags
+        {
+              UseMetaText = 1 << 0
+            , Bidirectional = 1 << 1
+
+        };
+
+        using GlyphMappings = std::vector< LLUtils::RectI32>;
+
+        LLUTILS_DEFINE_ENUM_CLASS_FLAG_OPERATIONS_IN_CLASS(TextCreateFlags)
+
         struct TextCreateParams
         {
             std::wstring fontPath;
             std::wstring text;
             uint16_t fontSize;
+            LLUtils::Color textColor;
             LLUtils::Color backgroundColor;
             LLUtils::Color outlineColor;
             uint32_t outlineWidth;
@@ -58,6 +71,7 @@ namespace FreeType
             uint16_t DPIx;
             uint16_t DPIy;
             uint16_t padding;
+            TextCreateFlags flags;
         };
 
         struct TextMesureParams
@@ -71,8 +85,9 @@ namespace FreeType
             uint32_t rowHeight;
         };
 
-        void CreateBitmap(const TextCreateParams& textCreateParams, Bitmap& out_bitmap);
 
+
+        void CreateBitmap(const TextCreateParams& textCreateParams, Bitmap& out_bitmap, GlyphMappings* out_glyphMapping = nullptr);
 
     private:
 

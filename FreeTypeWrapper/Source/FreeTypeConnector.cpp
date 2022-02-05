@@ -63,7 +63,7 @@ namespace FreeType
         vtol = nullptr;
         levels = nullptr;
 
-        log2vis = fribidi_log2vis(reinterpret_cast<FriBidiChar*>(logicalUTF32.data()), logicalUTF32.length(), &base,
+        log2vis = fribidi_log2vis(reinterpret_cast<FriBidiChar*>(logicalUTF32.data()),static_cast<FriBidiStrIndex>(logicalUTF32.length()), &base,
             /* output */
             reinterpret_cast<FriBidiChar*>(visualUTF32.data()), ltov, vtol, levels);
         
@@ -87,7 +87,12 @@ namespace FreeType
 
         mesureResult.rect = {};
 
-        vector<FormattedTextEntry> formattedText = MetaText::GetFormattedText(text);
+        vector<FormattedTextEntry> formattedText;
+
+        if ( (measureParams.createParams.flags & TextCreateFlags::UseMetaText) == TextCreateFlags::UseMetaText)
+            formattedText = MetaText::GetFormattedText(text);
+        else
+            formattedText.push_back({ measureParams.createParams.textColor, measureParams.createParams.text });
         
         int penX = 0;
         int penY = 0;
@@ -95,7 +100,8 @@ namespace FreeType
           
         for (const FormattedTextEntry& el : formattedText)
         {
-            std::u32string visualText = bidi_string(el.text.c_str());
+            const std::u32string visualText = ((measureParams.createParams.flags & TextCreateFlags::Bidirectional) == TextCreateFlags::Bidirectional)
+                 ? bidi_string(el.text.c_str()) : ww898::utf::conv<char32_t>(el.text);
             
             for (const decltype(visualText)::value_type& codepoint : visualText)
             {
@@ -162,7 +168,7 @@ namespace FreeType
 
 
 
-    void FreeTypeConnector::CreateBitmap(const TextCreateParams& textCreateParams, Bitmap& out_bitmap)
+    void FreeTypeConnector::CreateBitmap(const TextCreateParams& textCreateParams, Bitmap& out_bitmap,GlyphMappings* out_glyphMapping /*= nullptr*/)
     {
         using namespace std;
 
@@ -214,7 +220,7 @@ namespace FreeType
         LLUtils::Color textBackgroundBuffer = renderOutline ? 0 : backgroundColor;
         
 
-        for (uint32_t i = 0; i < mesaureResult.rect.GetWidth() * mesaureResult.rect.GetHeight(); i++)
+        for (int32_t i = 0; i < mesaureResult.rect.GetWidth() * mesaureResult.rect.GetHeight(); i++)
             reinterpret_cast<LLUtils::Color*>(textBuffer.data())[i] = textBackgroundBuffer;
 
 
@@ -225,7 +231,7 @@ namespace FreeType
         {
             outlineBuffer.Allocate(sizeOfDestBuffer);
             //Reset outline buffer to background color.
-            for (uint32_t i = 0; i < mesaureResult.rect.GetWidth() * mesaureResult.rect.GetHeight(); i++)
+            for (int32_t i = 0; i < mesaureResult.rect.GetWidth() * mesaureResult.rect.GetHeight(); i++)
                 reinterpret_cast<LLUtils::Color*>(outlineBuffer.data())[i] =  backgroundColor;
 
             destOutline.buffer = outlineBuffer.data();
@@ -252,11 +258,19 @@ namespace FreeType
         auto descender = face->size->metrics.descender >> 6;
         int rowHeight = mesaureResult.rowHeight;
 
-        vector<FormattedTextEntry> formattedText = MetaText::GetFormattedText(text);
+        vector<FormattedTextEntry> formattedText;
+        if ((textCreateParams.flags & TextCreateFlags::UseMetaText) == TextCreateFlags::UseMetaText)
+            formattedText = MetaText::GetFormattedText(text);
+        else
+            formattedText.push_back({ textCreateParams.textColor, textCreateParams.text });
+
+
 
         for (const FormattedTextEntry& el : formattedText)
         {
-            std::u32string visualText = bidi_string(el.text.c_str());
+            const std::u32string visualText = ((textCreateParams.flags & TextCreateFlags::Bidirectional) == TextCreateFlags::Bidirectional)
+                ? bidi_string(el.text.c_str()) : ww898::utf::conv<char32_t>(el.text);
+            
             for (const decltype(visualText)::value_type& codepoint : visualText)
             {
                 if (codepoint == L'\n')
@@ -338,11 +352,19 @@ namespace FreeType
                     dest.left = penX +  bitmapGlyph->left;
                     dest.top = baseVerticalPos - bitmapGlyph->top;
                     FT_GlyphSlot  slot = face->glyph;
+                    
+                    const auto advance = slot->advance.x >> 6;
+                    if (out_glyphMapping != nullptr)
+                    {
+                        out_glyphMapping->push_back(LLUtils::RectI32{ { penX, penY } ,
+                            {penX + advance, penY + rowHeight} });
+                    }
+
                     penX += slot->advance.x >> 6;
-
                     FT_Done_Glyph(glyph);
-
-                   BlitBox::Blit(dest, source);
+                    BlitBox::Blit(dest, source);
+                    
+                    
                 }
             }
         }
