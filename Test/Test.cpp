@@ -70,7 +70,6 @@ int main()
 		FreeTypeConnector::Bitmap textBitmap;
 		FreeTypeConnector::GetSingleton().CreateBitmap(params, textBitmap);
 		SaveToFile(textBitmap, folderToSaveFiles / "test10.bmp");
-		return 0;
 	}
 
 
@@ -91,8 +90,6 @@ int main()
 		FreeTypeConnector::Bitmap textBitmap;
 		FreeTypeConnector::GetSingleton().CreateBitmap(params, textBitmap);
 		SaveToFile(textBitmap, folderToSaveFiles / "test.bmp");
-
-
 	}
 
 	//Several test cases, for now mostly checks for out of bounds errors, if there's no exceptions test is considered passed.

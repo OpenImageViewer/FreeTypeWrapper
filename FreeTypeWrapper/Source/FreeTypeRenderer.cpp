@@ -81,11 +81,11 @@ namespace FreeType
                     uint8_t GC = bitmap.buffer[currentPixelPos + 1];
                     uint8_t RC = bitmap.buffer[currentPixelPos + 2];
 
-                    R = (textColor.R() * RC) / 0xFF;
-                    G = (textColor.G() * GC) / 0xFF;
-                    B = (textColor.B() * BC) / 0xFF;
+                    R = static_cast<uint8_t>((textColor.R() * RC) / 0xFF);
+                    G = static_cast<uint8_t>((textColor.G() * GC) / 0xFF);
+                    B = static_cast<uint8_t>((textColor.B() * BC) / 0xFF);
 
-                    A = (RC + GC + BC) / 3;
+                    A = static_cast<uint8_t>((RC + GC + BC) / 3);
                 }
                 break;
                 default:

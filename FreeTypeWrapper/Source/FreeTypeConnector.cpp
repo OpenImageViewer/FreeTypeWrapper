@@ -83,7 +83,7 @@ namespace FreeType
         const std::wstring& text = measureParams.createParams.text;
 
         font->SetSize(measureParams.createParams.fontSize, measureParams.createParams.DPIx, measureParams.createParams.DPIy);
-        const uint32_t rowHeight = static_cast<int>((static_cast<uint32_t>(face->size->metrics.height) >> 6) + measureParams.createParams.outlineWidth * 2);
+        const uint32_t rowHeight = (static_cast<uint32_t>(face->size->metrics.height) >> 6) + measureParams.createParams.outlineWidth * 2;
 
         mesureResult.rect = {};
 
@@ -130,11 +130,11 @@ namespace FreeType
                 mesureResult.rect.RightBottom().x = std::max<int>(mesureResult.rect.RightBottom().x, penX);
                 
             }
-            mesureResult.rect.RightBottom().y = rowHeight * numberOfLines;
+            mesureResult.rect.RightBottom().y = static_cast<int32_t>(rowHeight * numberOfLines);
         }
 
         //Add horizontal outline width to the final width, vertical outline width is already factored into rowHeight
-        mesureResult.rect = mesureResult.rect.Infalte(measureParams.createParams.outlineWidth * 2, 0);
+        mesureResult.rect = mesureResult.rect.Infalte(static_cast<int32_t>(measureParams.createParams.outlineWidth * 2), 0);
         mesureResult.rowHeight = static_cast<uint32_t>(rowHeight);
     }
 
@@ -149,8 +149,8 @@ namespace FreeType
         }
         else
         {
-            auto it = fFontNameToFont.emplace(fontPath, std::make_unique<FreeTypeFont>(fLibrary, fontPath));
-            font = it.first->second.get();
+            auto itFontName = fFontNameToFont.emplace(fontPath, std::make_unique<FreeTypeFont>(fLibrary, fontPath));
+            font = itFontName.first->second.get();
         }
 
         return font;
@@ -235,8 +235,8 @@ namespace FreeType
                 reinterpret_cast<LLUtils::Color*>(outlineBuffer.data())[i] =  backgroundColor;
 
             destOutline.buffer = outlineBuffer.data();
-            destOutline.width = mesaureResult.rect.GetWidth();
-            destOutline.height = mesaureResult.rect.GetHeight();
+            destOutline.width = static_cast<uint32_t>(mesaureResult.rect.GetWidth());
+            destOutline.height = static_cast<uint32_t>(mesaureResult.rect.GetHeight());
             destOutline.pixelSizeInbytes = destPixelSize;
             destOutline.rowPitch = destRowPitch;
         }
@@ -244,8 +244,8 @@ namespace FreeType
 
         BlitBox  dest {};
         dest.buffer = textBuffer.data();
-        dest.width = mesaureResult.rect.GetWidth();
-        dest.height = mesaureResult.rect.GetHeight();
+        dest.width = static_cast<uint32_t>(mesaureResult.rect.GetWidth());
+        dest.height = static_cast<uint32_t>(mesaureResult.rect.GetHeight());
         dest.pixelSizeInbytes = destPixelSize;
         dest.rowPitch = destRowPitch;
 
@@ -256,7 +256,7 @@ namespace FreeType
         
         FT_Face face = font->GetFace();
         auto descender = face->size->metrics.descender >> 6;
-        int rowHeight = mesaureResult.rowHeight;
+        uint32_t rowHeight = mesaureResult.rowHeight;
 
         vector<FormattedTextEntry> formattedText;
         if ((textCreateParams.flags & TextCreateFlags::UseMetaText) == TextCreateFlags::UseMetaText)
@@ -349,7 +349,7 @@ namespace FreeType
                     source.pixelSizeInbytes = destPixelSize;
                     source.rowPitch = destPixelSize * bitmapProperties.width;
 
-                    dest.left = penX +  bitmapGlyph->left;
+                    dest.left = static_cast<uint32_t>(penX +  bitmapGlyph->left);
                     dest.top = baseVerticalPos - bitmapGlyph->top;
                     FT_GlyphSlot  slot = face->glyph;
                     
@@ -357,7 +357,7 @@ namespace FreeType
                     if (out_glyphMapping != nullptr)
                     {
                         out_glyphMapping->push_back(LLUtils::RectI32{ { penX, penY } ,
-                            {penX + advance, penY + rowHeight} });
+                            {penX + advance, penY + static_cast<int32_t>(rowHeight)} });
                     }
 
                     penX += slot->advance.x >> 6;
@@ -379,8 +379,8 @@ namespace FreeType
             BlitBox::Blit(destOutline, dest);
         }
 
-        out_bitmap.width = mesaureResult.rect.GetWidth();
-        out_bitmap.height = mesaureResult.rect.GetHeight();
+        out_bitmap.width = static_cast<uint32_t>(mesaureResult.rect.GetWidth());
+        out_bitmap.height = static_cast<uint32_t>(mesaureResult.rect.GetHeight());
         out_bitmap.buffer = renderOutline ? std::move(outlineBuffer) : std::move(textBuffer);
         out_bitmap.PixelSize = destPixelSize;
         out_bitmap.rowPitch = destRowPitch;
