@@ -25,6 +25,39 @@ namespace FreeType
     class FreeTypeFont;
     using FreeTypeFontUniquePtr = std::unique_ptr<FreeTypeFont>;
 
+    enum class RenderMode
+    {
+          Default
+        , Antialiased
+        , SubpixelAntiAliased
+    };
+
+    enum class TextCreateFlags
+    {
+          None
+        , UseMetaText = 1 << 0
+        , Bidirectional = 1 << 1
+    };
+
+    LLUTILS_DEFINE_ENUM_CLASS_FLAG_OPERATIONS(TextCreateFlags)
+
+    struct TextCreateParams
+    {
+        std::wstring fontPath;
+        std::wstring text;
+        uint16_t fontSize;
+        LLUtils::Color textColor;
+        LLUtils::Color backgroundColor;
+        LLUtils::Color outlineColor;
+        uint32_t outlineWidth;
+        RenderMode renderMode;
+        uint16_t DPIx;
+        uint16_t DPIy;
+        uint16_t padding;
+        TextCreateFlags flags;
+    };
+
+
     class FreeTypeConnector : public LLUtils::Singleton<FreeTypeConnector>
     {
         friend class LLUtils::Singleton<FreeTypeConnector>;
@@ -40,39 +73,13 @@ namespace FreeType
             uint32_t rowPitch;
         };
 
-        enum class RenderMode
-        {
-              Default
-            , Antialiased
-            , SubpixelAntiAliased
-        };
-
-        enum class TextCreateFlags
-        {
-              UseMetaText = 1 << 0
-            , Bidirectional = 1 << 1
-
-        };
+   
 
         using GlyphMappings = std::vector< LLUtils::RectI32>;
 
-        LLUTILS_DEFINE_ENUM_CLASS_FLAG_OPERATIONS_IN_CLASS(TextCreateFlags)
 
-        struct TextCreateParams
-        {
-            std::wstring fontPath;
-            std::wstring text;
-            uint16_t fontSize;
-            LLUtils::Color textColor;
-            LLUtils::Color backgroundColor;
-            LLUtils::Color outlineColor;
-            uint32_t outlineWidth;
-            RenderMode renderMode;
-            uint16_t DPIx;
-            uint16_t DPIy;
-            uint16_t padding;
-            TextCreateFlags flags;
-        };
+
+     
 
         struct TextMesureParams
         {
