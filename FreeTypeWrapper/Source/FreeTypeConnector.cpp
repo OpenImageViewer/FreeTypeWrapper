@@ -15,7 +15,10 @@
 
 #include "BlitBox.h"
 #include "MetaTextParser.h"
-#include <fribidi.h>
+#if FREETYPE_WRAPPER_BUILD_FRIBIDI == 1
+    #include <fribidi.h>
+#endif
+
 #include <ww898/utf_converters.hpp>
 
 
@@ -49,9 +52,12 @@ namespace FreeType
         return "FreeType error: "s + FT_Error_String(error) + ", " + userMessage;
     }
 
+
     template <typename string_type>
     std::u32string bidi_string(const string_type& logical)
     {
+#if FREETYPE_WRAPPER_BUILD_FRIBIDI == 1
+
         FriBidiParType base = FRIBIDI_PAR_ON;
         FriBidiStrIndex* ltov, * vtol;
         FriBidiLevel* levels;
@@ -71,6 +77,9 @@ namespace FreeType
             LL_EXCEPTION(LLUtils::Exception::ErrorCode::InvalidState, "Cannot process string");
         
         return visualUTF32;
+#else
+        return ww898::utf::convz<char32_t>(logical);
+#endif
     }
 
 

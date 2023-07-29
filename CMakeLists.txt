@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 3.0)
 
 project(FreeTypeWrapper)
 option(FREETYPE_WRAPPER_BUILD_SAMPLES "build freetype wrapper sample" ON)
+option(FREETYPE_WRAPPER_BUILD_FRIBIDI "build freetype wrapper sample" OFF)
+
+if (${FREETYPE_WRAPPER_BUILD_FRIBIDI})
+	add_compile_definitions(-DFREETYPE_WRAPPER_BUILD_FRIBIDI=1)
+endif()
 
 add_subdirectory(FreeTypeWrapper)
 

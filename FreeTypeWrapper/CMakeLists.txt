@@ -1,6 +1,5 @@
 #Freetype Wrapper
 
-
 set(CMAKE_CXX_STANDARD 20)
 
  file(GLOB_RECURSE sourceFiles
@@ -20,12 +19,18 @@ option(FRIBIDI_BUILD_TESTS OFF)
 option(FRIBIDI_BUILD_BIN OFF)
 
 
-add_subdirectory(./External/fribidi)
+if (FREETYPE_WRAPPER_BUILD_FRIBIDI)
+    add_subdirectory(./External/fribidi)
+endif()
+
+
 
 add_library(${TargetName} ${sourceFiles})
 
 target_include_directories(${TargetName} PRIVATE ./External/freetype2/include)
-target_include_directories(${TargetName} PRIVATE ./External/fribidi/lib)
+if (FREETYPE_WRAPPER_BUILD_FRIBIDI)
+    target_include_directories(${TargetName} PRIVATE ./External/fribidi/lib)
+endif()
 target_include_directories(${TargetName} PRIVATE ./External/utf-cpp/include)
 target_include_directories(${TargetName} PRIVATE ./Source)
 target_include_directories(${TargetName} PRIVATE ./Include)
@@ -49,4 +54,6 @@ endif()
 
 #add_subdirectory(${FreeTypePath} ${FreeTypeOutput})
 target_link_libraries(${TargetName} PRIVATE freetype)
-target_link_libraries(${TargetName} PRIVATE libfribidi)
+if (FREETYPE_WRAPPER_BUILD_FRIBIDI)
+    target_link_libraries(${TargetName} PRIVATE libfribidi)
+endif()
