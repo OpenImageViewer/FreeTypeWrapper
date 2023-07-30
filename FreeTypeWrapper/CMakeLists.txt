@@ -18,14 +18,13 @@ option(FRIBIDI_ENABLE_DEBUG OFF)
 option(FRIBIDI_BUILD_TESTS OFF)
 option(FRIBIDI_BUILD_BIN OFF)
 
+add_library(${TargetName} ${sourceFiles})
 
 if (FREETYPE_WRAPPER_BUILD_FRIBIDI)
+	target_compile_definitions(${TargetName} PRIVATE FREETYPE_WRAPPER_BUILD_FRIBIDI=1)
     add_subdirectory(./External/fribidi)
 endif()
 
-
-
-add_library(${TargetName} ${sourceFiles})
 
 target_include_directories(${TargetName} PRIVATE ./External/freetype2/include)
 if (FREETYPE_WRAPPER_BUILD_FRIBIDI)
