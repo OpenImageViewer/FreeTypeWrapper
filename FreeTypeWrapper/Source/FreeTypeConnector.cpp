@@ -104,7 +104,7 @@ namespace FreeType
             formattedText.push_back({ measureParams.createParams.textColor, measureParams.createParams.text });
         
         int penX = 0;
-        int penY = 0;
+        //int penY = 0;
         int numberOfLines = 1;
           
         for (const FormattedTextEntry& el : formattedText)
@@ -118,7 +118,7 @@ namespace FreeType
                 {
                     numberOfLines++;
                     penX = 0;
-                    penY += rowHeight;
+                    //penY += rowHeight;
                     continue;
                 }
 
