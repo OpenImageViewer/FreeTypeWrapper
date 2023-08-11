@@ -50,6 +50,7 @@ namespace FreeType
         LLUtils::Color backgroundColor;
         LLUtils::Color outlineColor;
         uint32_t outlineWidth;
+        uint32_t maxWidthPx;
         RenderMode renderMode;
         uint16_t DPIx;
         uint16_t DPIy;
@@ -58,11 +59,25 @@ namespace FreeType
     };
 
 
+    struct TextMesureParams
+    {
+        TextCreateParams createParams;
+    };
+
+    struct TextMetrics
+    {
+        LLUtils::RectI32 rect;
+        uint32_t rowHeight;
+        uint32_t totalRows;
+    };
+
+
     class FreeTypeConnector : public LLUtils::Singleton<FreeTypeConnector>
     {
         friend class LLUtils::Singleton<FreeTypeConnector>;
     public:
         ~FreeTypeConnector();
+
 
         struct Bitmap
         {
@@ -78,23 +93,8 @@ namespace FreeType
         using GlyphMappings = std::vector< LLUtils::RectI32>;
 
 
-
-     
-
-        struct TextMesureParams
-        {
-            TextCreateParams createParams;
-        };
-
-        struct TextMesureResult
-        {
-            LLUtils::RectI32 rect;
-            uint32_t rowHeight;
-        };
-
-
-
-        void CreateBitmap(const TextCreateParams& textCreateParams, Bitmap& out_bitmap, GlyphMappings* out_glyphMapping = nullptr);
+        void CreateBitmap(const TextCreateParams& textCreateParams, Bitmap& out_bitmap, TextMetrics* metrics, GlyphMappings* out_glyphMapping = nullptr);
+        void MeasureText(const TextMesureParams& measureParams, TextMetrics& out_metrics);
 
     private:
 
@@ -104,7 +104,7 @@ namespace FreeType
         FreeTypeFont* GetOrCreateFont(const std::wstring& fontPath);
         FT_Stroker GetStroker();
         static std::string GenerateFreeTypeErrorString(std::string userMessage, FT_Error error);
-        void MeasureText(const TextMesureParams& measureParams, TextMesureResult& out_result);
+
 
 
     private:

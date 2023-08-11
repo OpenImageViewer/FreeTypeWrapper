@@ -15,17 +15,23 @@ namespace FreeType
 
         switch (bitmap.pixel_mode)
         {
+        case FT_PIXEL_MODE_MONO:
+            bitmapProperties.numChannels = 1;
+            bitmapProperties.bitsPerChannel = 1;
+            break;
         case FT_PIXEL_MODE_GRAY:
             bitmapProperties.numChannels = 1;
+            bitmapProperties.bitsPerChannel = 8;
             break;
         case FT_PIXEL_MODE_LCD:
             bitmapProperties.numChannels = 3;
+            bitmapProperties.bitsPerChannel = 8;
             break;
         default:
             LL_EXCEPTION_UNEXPECTED_VALUE;
         }
 
-        bitmapProperties.bitsPerChannel = static_cast<uint32_t>(std::log2(bitmap.num_grays + 1));
+        //bitmapProperties.bitsPerChannel = static_cast<uint32_t>(std::log2(bitmap.num_grays + 1));
         bitmapProperties.height = bitmap.rows;
         bitmapProperties.width = bitmap.width / bitmapProperties.numChannels;
         bitmapProperties.rowpitchInBytes = static_cast<uint32_t>(bitmap.pitch);
@@ -37,12 +43,15 @@ namespace FreeType
     {
         using namespace LLUtils;
 
-        FT_Bitmap bitmap = params.bitmapGlyph->bitmap;
+        BitmapProperties bitmapProperties = FreeTypeRenderer::GetBitmapGlyphProperties(*params.bitmapGlyph);
+
+
+        FT_Bitmap bitmap = *params.bitmapGlyph;
 
 
         const int destPixelSize = 4;
-        const uint32_t HeightInPixels = params.bitmapProperties.height;
-        const uint32_t widthInPixels = params.bitmapProperties.width;
+        const uint32_t HeightInPixels = bitmapProperties.height;
+        const uint32_t widthInPixels = bitmapProperties.width;
         
         LLUtils::Color textColor = params.textColor;
 
@@ -64,18 +73,36 @@ namespace FreeType
                 std::uint8_t G;
                 std::uint8_t B;
                 std::uint8_t A;
-                switch (params.bitmapProperties.numChannels)
+                switch (bitmapProperties.numChannels)
                 {
-                case 1: // MONOCHROME
-                    R = params.textColor.R();
-                    G = params.textColor.G();
-                    B = params.textColor.B();
-                    A = bitmap.buffer[sourceRowStart + x + 0];
+                case 1:
+                    switch (bitmapProperties.bitsPerChannel)
+                    {
+                    case 1: // MONOCHROME
+                    {
+                        R = params.textColor.R();
+                        G = params.textColor.G();
+                        B = params.textColor.B();
+                        const auto bytePos = sourceRowStart +  (x / 8);
+                        const auto bitPos = 8 - (x % 8) - 1;
+                        const auto bitValue = ((bitmap.buffer[bytePos] & (1 << bitPos)) >> bitPos);// *255;
+                        //OutputDebugStringA((std::to_string(bitValue) + "\n").c_str());
+                        A = bitValue * 255;
+                    }
+                        break;
+                    case 8: //GrayScale
+                        R = params.textColor.R();
+                        G = params.textColor.G();
+                        B = params.textColor.B();
+                        A = bitmap.buffer[sourceRowStart + x + 0];
+                        break;
+                    }
+
                     break;
 
                 case 3: // RGB
                 {
-                    uint32_t currentPixelPos = sourceRowStart + x * params.bitmapProperties.numChannels;
+                    uint32_t currentPixelPos = sourceRowStart + x * bitmapProperties.numChannels;
 
                     uint8_t BC = bitmap.buffer[currentPixelPos + 0];
                     uint8_t GC = bitmap.buffer[currentPixelPos + 1];
@@ -97,7 +124,7 @@ namespace FreeType
                 RGBABitmapPtr[destPos] = LLUtils::Color(RGBABitmapPtr[destPos]).Blend(source);
             }
 
-            sourceRowStart += params.bitmapProperties.rowpitchInBytes;
+            sourceRowStart += bitmapProperties.rowpitchInBytes;
         }
         return RGBABitmap;
     }
