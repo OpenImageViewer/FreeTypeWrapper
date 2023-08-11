@@ -76,7 +76,7 @@ void runTest(FreeType::TextCreateParams freetypeParams, TestParams testParams)
 	using namespace FreeType;
 	using namespace LLUtils;
 	FreeTypeConnector::Bitmap textBitmap;
-	FreeTypeConnector::GetSingleton().CreateBitmap(freetypeParams, textBitmap);
+	FreeTypeConnector::GetSingleton().CreateBitmap(freetypeParams, textBitmap, nullptr);
 
 	auto hash = XXH3_64bits(static_cast<const void*>(textBitmap.buffer.data()), textBitmap.height * textBitmap.rowPitch);
 	

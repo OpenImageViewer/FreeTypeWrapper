@@ -23,11 +23,12 @@ namespace FreeType
             std::byte* dstPos = dst.buffer + dst.GetStartOffset();
 
             //Perform range check on target.
-            if (dst.left + src.width > dst.width ||
-                dst.top + src.height > dst.height)
-            {
-                LL_EXCEPTION(LLUtils::Exception::ErrorCode::LogicError, "Target Out of bounds ");
-            }
+            if (dst.left + src.width > dst.width)
+                LL_EXCEPTION(LLUtils::Exception::ErrorCode::LogicError, "Width overflow");
+
+            if (dst.top + src.height > dst.height)
+                LL_EXCEPTION(LLUtils::Exception::ErrorCode::LogicError, "Height overflow ");
+
 
             const uint32_t bytesPerLine = src.pixelSizeInbytes * src.width;
 

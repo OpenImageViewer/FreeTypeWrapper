@@ -4,7 +4,8 @@ project(FreeTypeWrapper)
 option(FREETYPE_WRAPPER_BUILD_SAMPLES "build freetype wrapper sample" ON)
 option(FREETYPE_WRAPPER_BUILD_FRIBIDI "build fribidi" ON)
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	add_compile_definitions(NOMINMAX _CRT_SECURE_NO_WARNINGS)
 endif()
 
