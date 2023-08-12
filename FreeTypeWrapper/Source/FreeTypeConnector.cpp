@@ -105,7 +105,7 @@ namespace FreeType
         
         int penX = 0;
         //int penY = 0;
-        int numberOfLines = 1;
+        uint32_t numberOfLines = 1;
           
         for (const FormattedTextEntry& el : formattedText)
         {

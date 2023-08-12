@@ -7,9 +7,9 @@ set(CMAKE_CXX_STANDARD 20)
      "./Source/*.cpp"
  )
  
-#set(External ./External)
-#set(FreeTypePath ./External/freetype2)
-#set(FreeTypeOutput ./ExternalBuild/freetype2)
+ 
+option(FREETYPE_WRAPPER_DISABLE_WARNINGS_EXTERNAL_LIBS "Disable warnings for external libraries" TRUE)
+
 set(TargetName FreeTypeWrapper)
 
 add_subdirectory(./External/freetype2)
@@ -49,6 +49,14 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
   endif()
+endif()
+
+if (FREETYPE_WRAPPER_DISABLE_WARNINGS_EXTERNAL_LIBS)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    #    target_compile_options(freetype PRIVATE -Wno-deprecated-declarations)
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+        target_compile_options(freetype PRIVATE /wd4267 /wd4244 /wd4267 /wd4244)
+    endif()
 endif()
 
 #add_subdirectory(${FreeTypePath} ${FreeTypeOutput})
