@@ -366,7 +366,7 @@ namespace FreeType
                     if (out_glyphMapping != nullptr)
                     {
                         out_glyphMapping->push_back(LLUtils::RectI32{ { penX, penY } ,
-                            {penX + advance, penY + static_cast<int32_t>(rowHeight)} });
+                            {penX + static_cast<int32_t>(advance), penY + static_cast<int32_t>(rowHeight)} });
                     }
 
                     penX += slot->advance.x >> 6;
