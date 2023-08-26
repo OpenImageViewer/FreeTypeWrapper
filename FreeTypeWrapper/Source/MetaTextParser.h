@@ -7,7 +7,7 @@ namespace FreeType
 {
     struct FormattedTextEntry
     {
-        LLUtils::Color textColor;
+        LLUtils::Color textColor { 0,0,0,0 };
         //LLUtils::Color backgroundColor;
         //uint32_t size;
         //uint32_t outlineWidth;

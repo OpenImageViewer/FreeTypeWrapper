@@ -31,7 +31,6 @@ namespace FreeType
             LL_EXCEPTION_UNEXPECTED_VALUE;
         }
 
-        //bitmapProperties.bitsPerChannel = static_cast<uint32_t>(std::log2(bitmap.num_grays + 1));
         bitmapProperties.height = bitmap.rows;
         bitmapProperties.width = bitmap.width / bitmapProperties.numChannels;
         bitmapProperties.rowpitchInBytes = static_cast<uint32_t>(bitmap.pitch);
@@ -43,58 +42,65 @@ namespace FreeType
     {
         using namespace LLUtils;
 
-        BitmapProperties bitmapProperties = FreeTypeRenderer::GetBitmapGlyphProperties(*params.bitmapGlyph);
+        FT_Bitmap bitmap = params.bitmapGlyph->bitmap;
 
 
-        FT_Bitmap bitmap = *params.bitmapGlyph;
-
-
-        const int destPixelSize = 4;
-        const uint32_t HeightInPixels = bitmapProperties.height;
-        const uint32_t widthInPixels = bitmapProperties.width;
+        const int destPixelSize = sizeof(ColorF32);
+        const uint32_t HeightInPixels = params.bitmapProperties.height;
+        const uint32_t widthInPixels = params.bitmapProperties.width;
         
-        LLUtils::Color textColor = params.textColor;
+        Color textColor = params.textColor;
+        //ColorF32 textColor = static_cast<ColorF32>(params.textColor).MultiplyAlpha();
 
         const size_t bufferSize = widthInPixels * HeightInPixels * destPixelSize;
         LLUtils::Buffer RGBABitmap(bufferSize);
 
         // Fill glyph background with background color.
-        LLUtils::Color* RGBABitmapPtr = reinterpret_cast<LLUtils::Color*>(RGBABitmap.data());
+        ColorF32* RGBABitmapPtr = reinterpret_cast<ColorF32*>(RGBABitmap.data());
         memset(RGBABitmapPtr, 0, RGBABitmap.size());
 
         uint32_t sourceRowStart = 0;
+
+        ColorF32 textColorFloat = static_cast<ColorF32>(params.textColor);
+        ColorF32 finalColorPremul;
 
         for (uint32_t y = 0; y < bitmap.rows; y++)
         {
             for (uint32_t x = 0; x < widthInPixels; x++)
             {
                 const uint32_t destPos = y * widthInPixels + x;
-                std::uint8_t R;
-                std::uint8_t G;
-                std::uint8_t B;
-                std::uint8_t A;
-                switch (bitmapProperties.numChannels)
+                switch (params.bitmapProperties.numChannels)
                 {
                 case 1:
-                    switch (bitmapProperties.bitsPerChannel)
+                    switch (params.bitmapProperties.bitsPerChannel)
                     {
                     case 1: // MONOCHROME
                     {
-                        R = params.textColor.R();
-                        G = params.textColor.G();
-                        B = params.textColor.B();
                         const auto bytePos = sourceRowStart +  (x / 8);
                         const auto bitPos = 8 - (x % 8) - 1;
                         const auto bitValue = ((bitmap.buffer[bytePos] & (1 << bitPos)) >> bitPos);// *255;
-                        //OutputDebugStringA((std::to_string(bitValue) + "\n").c_str());
-                        A = bitValue * 255;
+
+                        finalColorPremul =
+                        {
+                              textColorFloat.R()
+                            , textColorFloat.G()
+                            , textColorFloat.B()
+                            , static_cast<decltype(textColorFloat)::color_channel_type>(bitValue)
+                        };
+                            
+                        
+
                     }
                         break;
                     case 8: //GrayScale
-                        R = params.textColor.R();
-                        G = params.textColor.G();
-                        B = params.textColor.B();
-                        A = bitmap.buffer[sourceRowStart + x + 0];
+                        finalColorPremul =
+                        {
+                              textColorFloat.R()
+                            , textColorFloat.G()
+                            , textColorFloat.B()
+                            , textColorFloat.A() * static_cast<decltype(textColorFloat)::color_channel_type>(bitmap.buffer[sourceRowStart + x + 0] / 255.0)
+                        };
+                        
                         break;
                     }
 
@@ -102,29 +108,36 @@ namespace FreeType
 
                 case 3: // RGB
                 {
-                    uint32_t currentPixelPos = sourceRowStart + x * bitmapProperties.numChannels;
+                    const uint32_t currentPixelPos = sourceRowStart + x * params.bitmapProperties.numChannels;
 
-                    uint8_t BC = bitmap.buffer[currentPixelPos + 0];
-                    uint8_t GC = bitmap.buffer[currentPixelPos + 1];
-                    uint8_t RC = bitmap.buffer[currentPixelPos + 2];
+                    const uint8_t BC = bitmap.buffer[currentPixelPos + 0];
+                    const uint8_t GC = bitmap.buffer[currentPixelPos + 1];
+                    const uint8_t RC = bitmap.buffer[currentPixelPos + 2];
+                    const uint8_t AC = static_cast<uint8_t>(((int)RC + (int)GC + (int)BC) / 3);
 
-                    R = static_cast<uint8_t>((textColor.R() * RC) / 0xFF);
-                    G = static_cast<uint8_t>((textColor.G() * GC) / 0xFF);
-                    B = static_cast<uint8_t>((textColor.B() * BC) / 0xFF);
 
-                    A = static_cast<uint8_t>((RC + GC + BC) / 3);
+
+                    finalColorPremul =
+                    {
+                              static_cast<uint8_t>((textColor.R()* RC) / 0xFF)
+                            , static_cast<uint8_t>((textColor.G()* GC) / 0xFF)
+                            , static_cast<uint8_t>((textColor.B()* BC) / 0xFF)
+                            , static_cast<uint8_t>(AC * textColor.A() / 0xFF)
+                    };
+        
                 }
+                    
                 break;
                 default:
                     LL_EXCEPTION_UNEXPECTED_VALUE;
                 }
 
-
-                LLUtils::Color source(R, G, B, A);
-                RGBABitmapPtr[destPos] = LLUtils::Color(RGBABitmapPtr[destPos]).Blend(source);
+                
+                RGBABitmapPtr[destPos] = RGBABitmapPtr[destPos].BlendPreMultiplied(finalColorPremul.MultiplyAlpha());
+                
             }
 
-            sourceRowStart += bitmapProperties.rowpitchInBytes;
+            sourceRowStart += params.bitmapProperties.rowpitchInBytes;
         }
         return RGBABitmap;
     }

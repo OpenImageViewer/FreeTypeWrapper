@@ -5,9 +5,7 @@
 
 
 typedef struct FT_BitmapGlyphRec_* FT_BitmapGlyph;
-typedef struct FT_Bitmap_ FT_Bitmap;
-
-
+struct FT_Bitmap_;
 namespace FreeType
 {
     class FreeTypeRenderer
@@ -24,7 +22,7 @@ namespace FreeType
 
         struct GlyphRGBAParams
         {
-            FT_Bitmap* bitmapGlyph;
+            FT_BitmapGlyph bitmapGlyph;
             LLUtils::Color backgroudColor;
             LLUtils::Color textColor;
             BitmapProperties bitmapProperties;

@@ -31,9 +31,14 @@ SOFTWARE.
 
 std::filesystem::path folderToSaveFiles = "./testImages/";
 #if LLUTILS_PLATFORM ==  LLUTILS_PLATFORM_WIN32
-std::filesystem::path fontPathSegoei = L"E:/Downloads/freefont-otf-20120503.tar/freefont-20120503/FreeSans.otf";
-std::filesystem::path fontPathSegoeib = L"E:/Downloads/freefont-otf-20120503.tar/freefont-20120503/FreeSans.otf";
+//std::filesystem::path fontPathSegoei = L"E:/Downloads/freefont-otf-20120503.tar/freefont-20120503/FreeSans.otf";
+//std::filesystem::path fontPathSegoeib = L"E:/Downloads/freefont-otf-20120503.tar/freefont-20120503/FreeSans.otf";
+//std::filesystem::path fontPathConsola = L"E:/Downloads/freefont-otf-20120503.tar/freefont-20120503/FreeSans.otf";
+
+std::filesystem::path fontPathSegoei = L"c:/Windows/Fonts/segoeui.ttf";
+std::filesystem::path fontPathSegoeib = L"c:/Windows/Fonts/segoeuib.ttf";
 std::filesystem::path fontPathConsola = L"c:/Windows/Fonts/consola.ttf";
+
 //std::filesystem::path fontPathConsola = L"E:/Downloads/freefont-otf-20120503.tar/freefont-20120503/FreeSans.otf";
 #elif LLUTILS_PLATFORM ==  LLUTILS_PLATFORM_LINUX
 std::filesystem::path fontPathSegoei = L"c:/Windows/Fonts/segoeui.ttf";
@@ -84,8 +89,8 @@ void runTest(FreeType::TextCreateParams freetypeParams, TestParams testParams)
 	if (testParams.saveToFile)
 		SaveToFile(textBitmap, testParams.fileName);
 
-	//if (hash != testParams.expectedHash)
-//		throw std::runtime_error("test failed"); 
+//	if (hash != testParams.expectedHash)
+	//	throw std::runtime_error("test failed"); 
 
 }
 
@@ -125,7 +130,7 @@ int runtests()
 	params.backgroundColor = LLUtils::Colors::White;
 	params.fontSize = 44;
 	params.renderMode = FreeType::RenderMode::Antialiased;
-	params.outlineWidth = 0;
+	params.outlineWidth = 2;
 	params.padding = 0;
 	params.flags = FreeType::TextCreateFlags::UseMetaText |
 		FreeType::TextCreateFlags::Bidirectional;
@@ -168,10 +173,13 @@ int runtests()
 
 	//params.text = L"3000 X 1712 X 32 BPP | loaded in 92.7 ms";
 	params.text = L"Texel: 1218.3 X  584.6";
+	params.textColor = { 255, 255, 0, 128};
+	params.outlineWidth = 2;
+	params.outlineColor = { 0, 0, 0, 128};
 	params.fontPath = fontPathConsola.wstring();
 	params.renderMode = FreeType::RenderMode::SubpixelAntiAliased;
 	params.fontSize = 11;
-	params.backgroundColor = { 255, 255, 255, 192 };
+	params.backgroundColor = { 255, 255, 255, 255 };
 	params.DPIx = 120;
 	params.DPIy = 120;
 	//params.padding = 1;
@@ -201,6 +209,7 @@ int runtests()
 
 	params.text = L"<textcolor=#ff8930>444";
 	params.fontPath = fontPathConsola.wstring();
+	params.outlineColor = { 0, 0, 0, 255 };
 	params.renderMode = FreeType::RenderMode::Antialiased;
 	params.fontSize = 11;
 	params.backgroundColor = { 255, 255, 255, 192 };
@@ -230,7 +239,8 @@ int runtests()
 	params.fontPath = fontPathSegoeib.wstring();
 	params.renderMode = FreeType::RenderMode::Antialiased;
 	params.fontSize = 11;
-	params.backgroundColor = { 255, 255, 255, 192 };
+	params.outlineColor = { 0,0,0,255 };
+	params.backgroundColor = { 0,0,0,0 };
 	params.DPIx = 120;
 	params.DPIy = 120;
 	params.padding = 0;
@@ -243,12 +253,14 @@ int runtests()
 	//Lower dpi mode
 	params.text = L"abcdefg.tif";
 	params.fontPath = fontPathSegoeib.wstring();
-	params.renderMode = FreeType::RenderMode::Antialiased;
+	params.textColor = { 255,0,0,255 };
+	params.renderMode = FreeType::RenderMode::SubpixelAntiAliased;
 	params.fontSize = 12;
 	params.backgroundColor = { 255, 255, 255, 192 };
 	params.DPIx = 96;
 	params.DPIy = 96;
 	params.padding = 0;
+	params.outlineColor = { 0,0,0,255 };
 	params.outlineWidth = 2;
 
 	testParams.fileName = (folderToSaveFiles / L"test6.bmp").wstring();

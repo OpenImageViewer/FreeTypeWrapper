@@ -17,17 +17,42 @@ namespace FreeType
             return (top * rowPitch) + (left * pixelSizeInbytes);
         }
 
+        template <typename color_type>
+        static void BlitPremultiplied (BlitBox& dst, const BlitBox& src)
+        {
+            const std::byte* srcPos = src.buffer + src.GetStartOffset();
+            std::byte* dstPos = dst.buffer + dst.GetStartOffset();
+
+            //Perform range check on target.
+            if (dst.left + src.width > dst.width || dst.top + src.height > dst.height)
+                LL_EXCEPTION(LLUtils::Exception::ErrorCode::LogicError, "Buffer out of bounds");
+
+            const uint32_t bytesPerLine = src.pixelSizeInbytes * src.width;
+
+            for (uint32_t y = src.top; y < src.height; y++)
+            {
+                for (uint32_t x = 0; x < bytesPerLine; x += sizeof(color_type))
+                {
+                    using namespace LLUtils;
+
+                    const color_type& srcColor = *reinterpret_cast<const color_type*>(srcPos + x);
+                    color_type& dstColor = *reinterpret_cast<color_type*>(dstPos + x);
+                    dstColor = dstColor.BlendPreMultiplied(srcColor);
+                }
+                dstPos += dst.rowPitch;
+                srcPos += src.rowPitch;
+            }
+        }
+
+
         static void Blit(BlitBox& dst, const BlitBox& src)
         {
             const std::byte* srcPos = src.buffer + src.GetStartOffset();
             std::byte* dstPos = dst.buffer + dst.GetStartOffset();
 
             //Perform range check on target.
-            if (dst.left + src.width > dst.width)
-                LL_EXCEPTION(LLUtils::Exception::ErrorCode::LogicError, "Width overflow");
-
-            if (dst.top + src.height > dst.height)
-                LL_EXCEPTION(LLUtils::Exception::ErrorCode::LogicError, "Height overflow ");
+            if (dst.left + src.width > dst.width || dst.top + src.height > dst.height)
+                LL_EXCEPTION(LLUtils::Exception::ErrorCode::LogicError, "Buffer out of bounds");
 
 
             const uint32_t bytesPerLine = src.pixelSizeInbytes * src.width;

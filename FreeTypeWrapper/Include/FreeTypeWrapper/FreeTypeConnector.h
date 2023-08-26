@@ -88,12 +88,26 @@ namespace FreeType
             uint32_t rowPitch;
         };
 
-   
+     /*   enum class CreateMode
+        {
+              None
+            , CreateMetrics
+            , CreateBitmap
+        };
+   */
 
         using GlyphMappings = std::vector< LLUtils::RectI32>;
 
 
         void CreateBitmap(const TextCreateParams& textCreateParams, Bitmap& out_bitmap, TextMetrics* metrics, GlyphMappings* out_glyphMapping = nullptr);
+
+        //void CreateBitmap(const TextCreateParams& textCreateParams
+        //    , CreateMode createMode
+        //    , TextMetrics* out_TextMetrics
+        //    , GlyphMappings* out_glyphMapping
+        //    , Bitmap* out_bitmap
+        //);
+        
         void MeasureText(const TextMesureParams& measureParams, TextMetrics& out_metrics);
 
     private:

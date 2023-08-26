@@ -20,7 +20,6 @@
 #endif
 
 #include <ww898/utf_converters.hpp>
-#include <freetype/ftbitmap.h>
 
 
 namespace FreeType
@@ -166,7 +165,6 @@ namespace FreeType
         mesureResult.rowHeight = static_cast<uint32_t>(rowHeight);
 
 
-        mesureResult.rect.RightBottom() += 50;
         
     }
 
@@ -196,6 +194,32 @@ namespace FreeType
             FT_Stroker_New(fLibrary, &fStroker);
         }
         return fStroker;
+    }
+
+
+ 
+
+    //void FreeTypeConnector::CreateBitmap(const TextCreateParams& textCreateParams
+    //    , CreateMode createMode
+    //    , TextMetrics* out_TextMetrics
+    //    , GlyphMappings* out_glyphMapping
+    //    , Bitmap* out_bitmap
+    //)
+    //{
+
+    //}
+
+    template <typename source_type, typename dest_type>
+    void ResolvePremultipoliedBUffer(LLUtils::Buffer& dest, const LLUtils::Buffer& source, uint32_t width, uint32_t height)
+    {
+        dest_type* destPtr = reinterpret_cast<dest_type*>(dest.data());
+        const source_type* sourcePtr = reinterpret_cast<const source_type*>(source.data());
+        for (auto y = 0u ; y < height;y++)
+            for (auto x = 0u; x < width; x++)
+            {
+                destPtr[y * width + x] = static_cast<dest_type>(sourcePtr[y * width + x].DivideAlpha());
+            }
+
     }
 
 
@@ -238,7 +262,8 @@ namespace FreeType
         
         auto& mesaureResult = metrics;
 
-        const uint32_t destPixelSize = 4;
+        using namespace LLUtils;
+        const uint32_t destPixelSize = sizeof(ColorF32);
         const uint32_t destRowPitch = mesaureResult.rect.GetWidth() * destPixelSize;
         const uint32_t sizeOfDestBuffer = mesaureResult.rect.GetHeight() * destRowPitch;
         const bool renderOutline = OutlineWidth > 0;
@@ -249,11 +274,11 @@ namespace FreeType
         //// when rendering with outline, the outline buffer is the final buffer, otherwise the text buffer is the final buffer.
         //Reset final text buffer to background color.
 
-        LLUtils::Color textBackgroundBuffer = renderOutline ? 0 : backgroundColor;
+        ColorF32 textBackgroundBuffer = renderOutline ? ColorF32(0.0f,0.0f,0.0f,0.0f) : static_cast<ColorF32>(backgroundColor).MultiplyAlpha();
         
 
         for (int32_t i = 0; i < mesaureResult.rect.GetWidth() * mesaureResult.rect.GetHeight(); i++)
-            reinterpret_cast<LLUtils::Color*>(textBuffer.data())[i] = textBackgroundBuffer;
+            reinterpret_cast<ColorF32*>(textBuffer.data())[i] = textBackgroundBuffer;
 
 
 
@@ -264,7 +289,7 @@ namespace FreeType
             outlineBuffer.Allocate(sizeOfDestBuffer);
             //Reset outline buffer to background color.
             for (int32_t i = 0; i < mesaureResult.rect.GetWidth() * mesaureResult.rect.GetHeight(); i++)
-                reinterpret_cast<LLUtils::Color*>(outlineBuffer.data())[i] =  backgroundColor;
+                reinterpret_cast<LLUtils::ColorF32*>(outlineBuffer.data())[i] =  static_cast<ColorF32>(backgroundColor).MultiplyAlpha();
 
             destOutline.buffer = outlineBuffer.data();
             destOutline.width = static_cast<uint32_t>(mesaureResult.rect.GetWidth());
@@ -347,10 +372,8 @@ namespace FreeType
                     FT_Glyph_To_Bitmap(&glyph, textRenderMOde, nullptr, true);
                     FT_BitmapGlyph bitmapGlyph = reinterpret_cast<FT_BitmapGlyph>(glyph);
                     FreeTypeRenderer::BitmapProperties bitmapProperties = FreeTypeRenderer::GetBitmapGlyphProperties(bitmapGlyph->bitmap);
-               
-                    
+                    LLUtils::Buffer rasterizedGlyph = FreeTypeRenderer::RenderGlyphToBuffer({ bitmapGlyph , {0,0,0,0} ,outlineColor, bitmapProperties });
 
-                    LLUtils::Buffer rasterizedGlyph = FreeTypeRenderer::RenderGlyphToBuffer({ &bitmapGlyph->bitmap, backgroundColor,outlineColor, bitmapProperties });
 
                     BlitBox source = {};
                     source.buffer = rasterizedGlyph.data();
@@ -361,7 +384,7 @@ namespace FreeType
 
                     destOutline.left = static_cast<uint32_t>(penX + bitmapGlyph->left);
                     destOutline.top = baseVerticalPos - bitmapGlyph->top;
-                    BlitBox::Blit(destOutline, source);
+                    BlitBox::BlitPremultiplied<ColorF32>(destOutline, source);
 
                     FT_Done_Glyph(glyph);
 
@@ -369,32 +392,28 @@ namespace FreeType
                 // Render text
                 if (renderText)
                 {
-                    
                     FT_Glyph glyph;
                     if (FT_Error error = FT_Get_Glyph(face->glyph, &glyph))
                         LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, "FreeType error, unable to render glyph");
 
-                    //auto currentRenderMode = renderOutline ? FT_Render_Mode::FT_RENDER_MODE_MONO : textRenderMOde;
-                    auto currentRenderMode = textRenderMOde;
-                    
                     if (glyph->format != FT_GLYPH_FORMAT_BITMAP)
                     {
-                        if (FT_Error error = FT_Glyph_To_Bitmap(&glyph, currentRenderMode, nullptr, true); error != FT_Err_Ok)
+                        if (FT_Error error = FT_Glyph_To_Bitmap(&glyph, textRenderMOde, nullptr, true); error != FT_Err_Ok)
                             LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, "FreeType error, unable to render glyph");
                     }
 
-                    
                     FT_BitmapGlyph bitmapGlyph = reinterpret_cast<FT_BitmapGlyph>(glyph);
-                    
-                    LLUtils::Buffer rasterizedGlyph = FreeTypeRenderer::RenderGlyphToBuffer({ &bitmapGlyph->bitmap , backgroundColor, el.textColor });
+                    FreeTypeRenderer::BitmapProperties bitmapProperties = FreeTypeRenderer::GetBitmapGlyphProperties(bitmapGlyph->bitmap);
+                    const auto textcolor = el.textColor != Color{0, 0, 0, 0} ? el.textColor : params.createParams.textColor;
+
+                    LLUtils::Buffer rasterizedGlyph = FreeTypeRenderer::RenderGlyphToBuffer({ bitmapGlyph , backgroundColor, textcolor , bitmapProperties });
 
                     BlitBox source = {};
                     source.buffer = rasterizedGlyph.data();
-                    
-                    source.width = bitmapGlyph->bitmap.width; 
-                    source.height = bitmapGlyph->bitmap.rows;
+                    source.width = bitmapProperties.width;
+                    source.height = bitmapProperties.height;
                     source.pixelSizeInbytes = destPixelSize;
-                    source.rowPitch = destPixelSize * bitmapGlyph->bitmap.width;
+                    source.rowPitch = destPixelSize * bitmapProperties.width;
 
                     dest.left = static_cast<uint32_t>(penX +  bitmapGlyph->left);
                     dest.top = baseVerticalPos - bitmapGlyph->top;
@@ -408,9 +427,9 @@ namespace FreeType
                     penX += advance;
 
                     FT_Done_Glyph(glyph);
-                    BlitBox::Blit(dest, source);
+                    BlitBox::BlitPremultiplied<ColorF32>(dest, source);
                     
-                    
+
                 }
             }
         }
@@ -422,14 +441,20 @@ namespace FreeType
             dest.top = 0;
             destOutline.left = 0;
             destOutline.top = 0;
-            BlitBox::Blit(destOutline, dest);
+            BlitBox::BlitPremultiplied<ColorF32>(destOutline, dest);
         }
+
+        const auto buferToResolve = renderOutline ? std::move(outlineBuffer) : std::move(textBuffer);
+        Buffer resolved(mesaureResult.rect.GetWidth() * mesaureResult.rect.GetHeight() * sizeof(Color));
+        ResolvePremultipoliedBUffer<ColorF32, Color>(resolved, buferToResolve, static_cast<uint32_t>(mesaureResult.rect.GetWidth()), static_cast<uint32_t>(mesaureResult.rect.GetHeight()));
 
         out_bitmap.width = static_cast<uint32_t>(mesaureResult.rect.GetWidth());
         out_bitmap.height = static_cast<uint32_t>(mesaureResult.rect.GetHeight());
-        out_bitmap.buffer = renderOutline ? std::move(outlineBuffer) : std::move(textBuffer);
-        out_bitmap.PixelSize = destPixelSize;
-        out_bitmap.rowPitch = destRowPitch;
+		
+        out_bitmap.buffer =  std::move(resolved);
+		
+        out_bitmap.PixelSize = sizeof(Color);
+        out_bitmap.rowPitch = sizeof(Color) * mesaureResult.rect.GetWidth();
 
     }
 }

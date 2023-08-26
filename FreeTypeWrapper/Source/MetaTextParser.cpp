@@ -110,7 +110,7 @@ namespace FreeType
 
         if (beginTag == -1)
         {
-            entry.textColor = LLUtils::Color(0xaa, 0xaa, 0xaa, 0xFF);;
+            //entry.textColor = LLUtils::Color(0xaa, 0xaa, 0xaa, 0xFF);;
             entry.text = text;
         }
         else
