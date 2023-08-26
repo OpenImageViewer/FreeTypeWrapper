@@ -17,6 +17,7 @@ struct  FT_StrokerRec_;
 typedef struct FT_StrokerRec_* FT_Stroker;
 typedef int  FT_Error;
 typedef struct FT_LibraryRec_* FT_Library;
+typedef enum  FT_Render_Mode_ FT_Render_Mode;
 
 #pragma endregion FreeType forward declerations
 
@@ -28,6 +29,7 @@ namespace FreeType
     enum class RenderMode
     {
           Default
+        , Aliased
         , Antialiased
         , SubpixelAntiAliased
     };
@@ -35,7 +37,7 @@ namespace FreeType
     enum class TextCreateFlags
     {
           None
-        , UseMetaText = 1 << 0
+        , UseMetaText   = 1 << 0
         , Bidirectional = 1 << 1
     };
 
@@ -118,6 +120,11 @@ namespace FreeType
         FreeTypeFont* GetOrCreateFont(const std::wstring& fontPath);
         FT_Stroker GetStroker();
         static std::string GenerateFreeTypeErrorString(std::string userMessage, FT_Error error);
+        FT_Render_Mode GetRenderMode(RenderMode renderMode) const;
+
+        template <typename source_type, typename dest_type>
+        void ResolvePremultipoliedBUffer(LLUtils::Buffer& dest, const LLUtils::Buffer& source, uint32_t width, uint32_t height);
+        
 
 
 

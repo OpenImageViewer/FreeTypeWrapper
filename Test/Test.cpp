@@ -267,6 +267,24 @@ int runtests()
 	testParams.expectedHash = 3439216908320477038u;
 	runTest(params, testParams);
 
+
+	//Test aliased text
+	params.text = L"<textcolor=#ff8930>aliased text";
+	params.fontPath = fontPathConsola.wstring();
+	params.outlineColor = { 0, 0, 0, 255 };
+	params.outlineWidth = 0;
+	params.renderMode = FreeType::RenderMode::Aliased;
+	params.fontSize = 11;
+	params.backgroundColor = { 255, 255, 255, 255};
+	params.DPIx = 120;
+	params.DPIy = 120;
+	params.padding = 0;
+
+	testParams.fileName = (folderToSaveFiles / "test7.bmp").wstring();
+	testParams.expectedHash = 11631623323771771341u;
+	runTest(params, testParams);
+
+
 	return 0;
 }
 

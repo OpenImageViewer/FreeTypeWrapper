@@ -210,8 +210,8 @@ namespace FreeType
     //}
 
     template <typename source_type, typename dest_type>
-    void ResolvePremultipoliedBUffer(LLUtils::Buffer& dest, const LLUtils::Buffer& source, uint32_t width, uint32_t height)
-    {
+    void FreeTypeConnector::ResolvePremultipoliedBUffer(LLUtils::Buffer& dest, const LLUtils::Buffer& source, uint32_t width, uint32_t height)
+	{
         dest_type* destPtr = reinterpret_cast<dest_type*>(dest.data());
         const source_type* sourcePtr = reinterpret_cast<const source_type*>(source.data());
         for (auto y = 0u ; y < height;y++)
@@ -219,7 +219,23 @@ namespace FreeType
             {
                 destPtr[y * width + x] = static_cast<dest_type>(sourcePtr[y * width + x].DivideAlpha());
             }
+	}
 
+    FT_Render_Mode FreeTypeConnector::GetRenderMode(RenderMode renderMode) const
+    {
+        switch (renderMode)
+        {
+        case RenderMode::Aliased:
+            return FT_Render_Mode::FT_RENDER_MODE_MONO;
+        case RenderMode::Default:
+        case RenderMode::Antialiased:
+            return FT_Render_Mode::FT_RENDER_MODE_NORMAL;
+        case RenderMode::SubpixelAntiAliased:
+            return FT_Render_Mode::FT_RENDER_MODE_LCD;
+        default:
+            return FT_Render_Mode::FT_RENDER_MODE_NORMAL;
+
+        }
     }
 
 
@@ -250,7 +266,9 @@ namespace FreeType
         TextMesureParams params;
         params.createParams = textCreateParams;
 
-        const FT_Render_Mode textRenderMOde = (renderMode == RenderMode::SubpixelAntiAliased ? FT_RENDER_MODE_LCD : FT_RENDER_MODE_NORMAL);
+        
+
+        const FT_Render_Mode textRenderMOde = GetRenderMode(renderMode); 
 
         
         TextMetrics metrics;
