@@ -66,11 +66,18 @@ namespace FreeType
         TextCreateParams createParams;
     };
 
+    struct LineMetrics
+    {
+        int32_t maxGlyphHeight;
+    };
+
     struct TextMetrics
     {
+        std::vector< LineMetrics> lineMetrics;
         LLUtils::RectI32 rect;
         uint32_t rowHeight;
-        uint32_t totalRows;
+        int32_t minX = std::numeric_limits<int32_t>::max();
+        int32_t maxX = std::numeric_limits<int32_t>::min();
     };
 
 
@@ -90,26 +97,27 @@ namespace FreeType
             uint32_t rowPitch;
         };
 
-     /*   enum class CreateMode
+/*
+        enum class CreateMode
         {
               None
             , CreateMetrics
             , CreateBitmap
         };
-   */
+  */ 
 
         using GlyphMappings = std::vector< LLUtils::RectI32>;
 
 
         void CreateBitmap(const TextCreateParams& textCreateParams, Bitmap& out_bitmap, TextMetrics* metrics, GlyphMappings* out_glyphMapping = nullptr);
-
-        //void CreateBitmap(const TextCreateParams& textCreateParams
-        //    , CreateMode createMode
-        //    , TextMetrics* out_TextMetrics
-        //    , GlyphMappings* out_glyphMapping
-        //    , Bitmap* out_bitmap
-        //);
-        
+/*
+        void CreateBitmap(const TextCreateParams& textCreateParams
+            , CreateMode createMode
+            , TextMetrics* out_TextMetrics
+            , GlyphMappings* out_glyphMapping
+            , Bitmap* out_bitmap
+        );
+  */      
         void MeasureText(const TextMesureParams& measureParams, TextMetrics& out_metrics);
 
     private:
