@@ -164,8 +164,6 @@ namespace FreeType
                     currentLine = &mesureResult.lineMetrics.back();
                 }
 
-                const auto baseVerticalPos = rowHeight + penY + descender;
-
                 if (renderOutline && !OptimizeOutlineRendering) // measure outline
                 {
                     //Generate outline bitmaps:

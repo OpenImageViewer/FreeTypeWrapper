@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2021 Lior Lahav
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -31,15 +31,9 @@ SOFTWARE.
 
 std::filesystem::path folderToSaveFiles = "./testImages/";
 #if LLUTILS_PLATFORM ==  LLUTILS_PLATFORM_WIN32
-//std::filesystem::path fontPathSegoei = L"E:/Downloads/freefont-otf-20120503.tar/freefont-20120503/FreeSans.otf";
-//std::filesystem::path fontPathSegoeib = L"E:/Downloads/freefont-otf-20120503.tar/freefont-20120503/FreeSans.otf";
-//std::filesystem::path fontPathConsola = L"E:/Downloads/freefont-otf-20120503.tar/freefont-20120503/FreeSans.otf";
-
 std::filesystem::path fontPathSegoei = L"c:/Windows/Fonts/segoeui.ttf";
 std::filesystem::path fontPathSegoeib = L"c:/Windows/Fonts/segoeuib.ttf";
 std::filesystem::path fontPathConsola = L"c:/Windows/Fonts/consola.ttf";
-
-//std::filesystem::path fontPathConsola = L"E:/Downloads/freefont-otf-20120503.tar/freefont-20120503/FreeSans.otf";
 #elif LLUTILS_PLATFORM ==  LLUTILS_PLATFORM_LINUX
 std::filesystem::path fontPathSegoei = L"c:/Windows/Fonts/segoeui.ttf";
 std::filesystem::path fontPathSegoeib = L"c:/Windows/Fonts/segoeuib.ttf";
@@ -51,7 +45,7 @@ std::filesystem::path fontPathConsola = L"c:/Windows/Fonts/consola.ttf";
 
 
 
-bool shouldSaveToFile = true;
+bool shouldSaveToFile = false;
 
 void SaveToFile(const FreeType::FreeTypeConnector::Bitmap& textBitmap, const std::wstring& filePath)
 {
@@ -77,12 +71,12 @@ struct TestParams
 
 
 
-void runTest(FreeType::TextCreateParams freetypeParams, TestParams testParams)
+void runTest(FreeType::FreeTypeConnector& freeType, FreeType::TextCreateParams freetypeParams, TestParams testParams)
 {
 	using namespace FreeType;
 	using namespace LLUtils;
 	FreeTypeConnector::Bitmap textBitmap;
-	FreeTypeConnector::GetSingleton().CreateBitmap(freetypeParams, textBitmap, nullptr);
+	freeType.CreateBitmap(freetypeParams, textBitmap, nullptr);
 
 	auto hash = XXH3_64bits(static_cast<const void*>(textBitmap.buffer.data()), textBitmap.height * textBitmap.rowPitch);
 	
@@ -98,6 +92,7 @@ int runtests()
 {
 	using namespace FreeType;
 	using namespace LLUtils;
+	FreeTypeConnector freeType;
 	FreeType::TextCreateParams params{};
 	TestParams testParams{};
 	testParams.saveToFile = shouldSaveToFile;
@@ -108,6 +103,7 @@ int runtests()
 	params.fontPath = fontPathSegoeib.wstring();
 	params.text = L"ijkjojujrjaj";
 	params.textColor = LLUtils::Colors::Black;
+	params.outlineColor = { 0,0,0,255 };
 	params.backgroundColor = LLUtils::Colors::White;
 	params.fontSize = 44;
 	params.renderMode = FreeType::RenderMode::Antialiased;
@@ -116,7 +112,7 @@ int runtests()
 	testParams.fileName = (folderToSaveFiles / "test10.bmp").wstring();
 	testParams.expectedHash = 7683707409401849002u;
 
-	runTest(params, testParams);
+	runTest(freeType, params, testParams);
 
 
 
@@ -130,7 +126,7 @@ int runtests()
 	params.backgroundColor = LLUtils::Colors::White;
 	params.fontSize = 44;
 	params.renderMode = FreeType::RenderMode::Antialiased;
-	params.outlineWidth = 2;
+	params.outlineWidth = 0;
 	params.padding = 0;
 	params.flags = FreeType::TextCreateFlags::UseMetaText |
 		FreeType::TextCreateFlags::Bidirectional;
@@ -138,7 +134,7 @@ int runtests()
 	testParams.fileName = (folderToSaveFiles / "test.bmp").wstring();
 	testParams.expectedHash = 16738229490926515141u;
 
-	runTest(params, testParams);
+	runTest(freeType, params, testParams);
 
 
 
@@ -165,7 +161,7 @@ int runtests()
 	testParams.fileName = (folderToSaveFiles / "test1.bmp").wstring();
 	testParams.expectedHash = 16558562707942498804u;
 
-	runTest(params, testParams);
+	runTest(freeType, params, testParams);
 
 
 
@@ -173,19 +169,17 @@ int runtests()
 
 	//params.text = L"3000 X 1712 X 32 BPP | loaded in 92.7 ms";
 	params.text = L"Texel: 1218.3 X  584.6";
-	params.textColor = { 255, 255, 0, 128};
-	params.outlineWidth = 2;
-	params.outlineColor = { 0, 0, 0, 128};
+	params.textColor = Colors::Lava;
 	params.fontPath = fontPathConsola.wstring();
 	params.renderMode = FreeType::RenderMode::SubpixelAntiAliased;
 	params.fontSize = 11;
-	params.backgroundColor = { 255, 255, 255, 255 };
+	params.backgroundColor = { 255, 255, 255, 192 };
 	params.DPIx = 120;
 	params.DPIy = 120;
 	//params.padding = 1;
 	testParams.fileName = (folderToSaveFiles / "test2.bmp").wstring();
 	testParams.expectedHash = 11320992707252375232u;
-	runTest(params, testParams);
+	runTest(freeType, params, testParams);
 
 
 
@@ -201,7 +195,7 @@ int runtests()
 
 	testParams.fileName = (folderToSaveFiles / "test3.bmp").wstring();
 	testParams.expectedHash = 9753445643566658639u;
-	runTest(params, testParams);
+	runTest(freeType, params, testParams);
 
 
 
@@ -209,7 +203,6 @@ int runtests()
 
 	params.text = L"<textcolor=#ff8930>444";
 	params.fontPath = fontPathConsola.wstring();
-	params.outlineColor = { 0, 0, 0, 255 };
 	params.renderMode = FreeType::RenderMode::Antialiased;
 	params.fontSize = 11;
 	params.backgroundColor = { 255, 255, 255, 192 };
@@ -219,14 +212,14 @@ int runtests()
 
 	testParams.fileName = (folderToSaveFiles / "test4_1.bmp").wstring();
 	testParams.expectedHash = 11631623323771771341u;
-	runTest(params, testParams);
+	runTest(freeType, params, testParams);
 
 
 	params.text = L"<textcolor=#ff8930>555";
 
 	testParams.fileName = (folderToSaveFiles / "test4_2.bmp").wstring();
 	testParams.expectedHash = 17162733075979477580u;
-	runTest(params, testParams);
+	runTest(freeType, params, testParams);
 
 
 
@@ -239,8 +232,7 @@ int runtests()
 	params.fontPath = fontPathSegoeib.wstring();
 	params.renderMode = FreeType::RenderMode::Antialiased;
 	params.fontSize = 11;
-	params.outlineColor = { 0,0,0,255 };
-	params.backgroundColor = { 0,0,0,0 };
+	params.backgroundColor = { 255, 255, 255, 192 };
 	params.DPIx = 120;
 	params.DPIy = 120;
 	params.padding = 0;
@@ -248,24 +240,22 @@ int runtests()
 
 	testParams.fileName = (folderToSaveFiles / "test5.bmp").wstring();
 	testParams.expectedHash = 4822496049661565882u;
-	runTest(params, testParams);
+	runTest(freeType, params, testParams);
 
 	//Lower dpi mode
 	params.text = L"abcdefg.tif";
 	params.fontPath = fontPathSegoeib.wstring();
-	params.textColor = { 255,0,0,255 };
-	params.renderMode = FreeType::RenderMode::SubpixelAntiAliased;
+	params.renderMode = FreeType::RenderMode::Antialiased;
 	params.fontSize = 12;
 	params.backgroundColor = { 255, 255, 255, 192 };
 	params.DPIx = 96;
 	params.DPIy = 96;
 	params.padding = 0;
-	params.outlineColor = { 0,0,0,255 };
 	params.outlineWidth = 2;
 
 	testParams.fileName = (folderToSaveFiles / L"test6.bmp").wstring();
 	testParams.expectedHash = 3439216908320477038u;
-	runTest(params, testParams);
+	runTest(freeType, params, testParams);
 
 
 	//Test aliased text
@@ -282,7 +272,7 @@ int runtests()
 
 	testParams.fileName = (folderToSaveFiles / "test7.bmp").wstring();
 	testParams.expectedHash = 11631623323771771341u;
-	runTest(params, testParams);
+	runTest(freeType, params, testParams);
 
 
 	return 0;
