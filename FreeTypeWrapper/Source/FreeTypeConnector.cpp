@@ -89,6 +89,9 @@ namespace FreeType
         using namespace std;
         using namespace LLUtils;
 
+        // If enabled, outline is not rendererd, but an estimation is given for the size of the final image
+        constexpr bool OptimizeOutlineRendering = true;
+
         auto textCreateParams = measureParams.createParams;
 
         const  std::wstring text = textCreateParams.text;
@@ -163,8 +166,10 @@ namespace FreeType
 
                 const auto baseVerticalPos = rowHeight + penY + descender;
 
-                if (renderOutline) // render outline
+                if (renderOutline && !OptimizeOutlineRendering) // measure outline
                 {
+                    //Generate outline bitmaps:
+                    //TODO: optimize this out by using stroker metrics only if possible
                     //initialize stroker, so you can create outline font
                     FT_Stroker stroker = GetStroker();
 
@@ -174,7 +179,6 @@ namespace FreeType
                     FT_Get_Glyph(face->glyph, &glyph);
                     FT_Glyph_StrokeBorder(&glyph, stroker, false, true);
                     FT_Glyph_To_Bitmap(&glyph, textRenderMOde, nullptr, true);
-
 
                     FT_BitmapGlyph bitmapGlyph = reinterpret_cast<FT_BitmapGlyph>(glyph);
                     FreeTypeRenderer::BitmapProperties bitmapProperties = FreeTypeRenderer::GetBitmapGlyphProperties(bitmapGlyph->bitmap);
@@ -196,41 +200,39 @@ namespace FreeType
                 // Render text
                 if (renderText)
                 {
-                    FT_Glyph glyph;
-                    if (FT_Error error = FT_Get_Glyph(face->glyph, &glyph))
-                        LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, "FreeType error, unable to render glyph");
-
-                    if (glyph->format != FT_GLYPH_FORMAT_BITMAP)
-                    {
-                        if (FT_Error error = FT_Glyph_To_Bitmap(&glyph, textRenderMOde, nullptr, true); error != FT_Err_Ok)
-                            LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, "FreeType error, unable to render glyph");
-                    }
-
-                    FT_BitmapGlyph bitmapGlyph = reinterpret_cast<FT_BitmapGlyph>(glyph);
-                    FreeTypeRenderer::BitmapProperties bitmapProperties = FreeTypeRenderer::GetBitmapGlyphProperties(bitmapGlyph->bitmap);
+                    FreeTypeRenderer::BitmapProperties bitmapProperties = FreeTypeRenderer::GetBitmapGlyphProperties(face->glyph->bitmap);
 
                     auto width = bitmapProperties.width;
                     auto height = bitmapProperties.height;
-                    auto left = bitmapGlyph->left;
-                    auto top = bitmapGlyph->top;
+                    auto left = face->glyph->bitmap_left;
+                    auto top = face->glyph->bitmap_top;
+                    
+                    if (OptimizeOutlineRendering == true && renderOutline == true)
+                    {
+                        //Do this for optimized estimation
+                        currentLine->maxGlyphHeight = std::max<int32_t>(currentLine->maxGlyphHeight, height - top + OutlineWidth);
+                        mesureResult.minX = std::min<int32_t>(mesureResult.minX, left + penX - OutlineWidth - 1);
+                        mesureResult.maxX = std::max<int32_t>(mesureResult.maxX, left + width + penX + OutlineWidth + 1);
+                    }
+                    else
+                    {
+                        currentLine->maxGlyphHeight = std::max<int32_t>(currentLine->maxGlyphHeight, height - top);
+                        mesureResult.minX = std::min<int32_t>(mesureResult.minX, left + penX);
+                        mesureResult.maxX = std::max<int32_t>(mesureResult.maxX, left + width + penX);
+                    }
 
-                    currentLine->maxGlyphHeight =  std::max<int32_t>(currentLine->maxGlyphHeight, height - top);
-
-                    mesureResult.minX = std::min<int32_t>(mesureResult.minX, left + penX);
-                    mesureResult.maxX = std::max<int32_t>(mesureResult.maxX, left + width + penX);
 
                     penX += advance;
-
-                    FT_Done_Glyph(glyph);
                 }
             }
         }
 
         mesureResult.rect = { {mesureResult.minX , 0}, {mesureResult.maxX , static_cast<int32_t>(mesureResult.lineMetrics.size() * rowHeight) } };
 
-        const auto baseVerticalPos = static_cast<int32_t>(mesureResult.lineMetrics.size() * rowHeight + descender);
+        const auto baseVerticalPos = static_cast<int32_t>(mesureResult.lineMetrics.size() * rowHeight + descender );
 
-        mesureResult.rect.RightBottom().y = std::max(mesureResult.rect.RightBottom().y, baseVerticalPos + mesureResult.lineMetrics.back().maxGlyphHeight);
+        mesureResult.rect.RightBottom().y = std::max(mesureResult.rect.RightBottom().y, baseVerticalPos + mesureResult.lineMetrics.back().maxGlyphHeight 
+            - static_cast<int32_t>(OutlineWidth));
 
 
         mesureResult.rect = mesureResult.rect.Infalte(measureParams.createParams.padding * 2, measureParams.createParams.padding * 2);
@@ -265,19 +267,6 @@ namespace FreeType
         return fStroker;
     }
 
-
- 
-/*
-    void FreeTypeConnector::CreateBitmap(const TextCreateParams& textCreateParams
-        , CreateMode createMode
-        , TextMetrics* out_TextMetrics
-        , GlyphMappings* out_glyphMapping
-        , Bitmap* out_bitmap
-    )
-    {
-
-    }
-    */
     template <typename source_type, typename dest_type>
     void FreeTypeConnector::ResolvePremultipoliedBUffer(LLUtils::Buffer& dest, const LLUtils::Buffer& source, uint32_t width, uint32_t height)
 	{
@@ -436,7 +425,7 @@ namespace FreeType
 
                 }
 
-                const auto baseVerticalPos = rowHeight + penY + descender;
+                const auto baseVerticalPos = rowHeight + penY + descender - OutlineWidth;
 
                 if (renderOutline) // render outline
                 {
