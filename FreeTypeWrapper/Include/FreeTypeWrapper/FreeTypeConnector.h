@@ -6,7 +6,6 @@
 
 #include <LLUtils/Color.h>
 #include <LLUtils/Buffer.h>
-#include <LLUtils/Singleton.h>
 #include <LLUtils/Rect.h>
 #include <LLUtils/EnumClassBitwise.h>
 
@@ -81,10 +80,10 @@ namespace FreeType
     };
 
 
-    class FreeTypeConnector : public LLUtils::Singleton<FreeTypeConnector>
+    class FreeTypeConnector
     {
-        friend class LLUtils::Singleton<FreeTypeConnector>;
     public:
+        FreeTypeConnector();
         ~FreeTypeConnector();
 
 
@@ -97,34 +96,17 @@ namespace FreeType
             uint32_t rowPitch;
         };
 
-/*
-        enum class CreateMode
-        {
-              None
-            , CreateMetrics
-            , CreateBitmap
-        };
-  */ 
+
 
         using GlyphMappings = std::vector< LLUtils::RectI32>;
 
-
         void CreateBitmap(const TextCreateParams& textCreateParams, Bitmap& out_bitmap, TextMetrics* metrics, GlyphMappings* out_glyphMapping = nullptr);
-/*
-        void CreateBitmap(const TextCreateParams& textCreateParams
-            , CreateMode createMode
-            , TextMetrics* out_TextMetrics
-            , GlyphMappings* out_glyphMapping
-            , Bitmap* out_bitmap
-        );
-  */      
         void MeasureText(const TextMesureParams& measureParams, TextMetrics& out_metrics);
 
     private:
-
      //private member methods
 
-        FreeTypeConnector();
+        
         FreeTypeFont* GetOrCreateFont(const std::wstring& fontPath);
         FT_Stroker GetStroker();
         static std::string GenerateFreeTypeErrorString(std::string userMessage, FT_Error error);
@@ -132,8 +114,6 @@ namespace FreeType
 
         template <typename source_type, typename dest_type>
         void ResolvePremultipoliedBUffer(LLUtils::Buffer& dest, const LLUtils::Buffer& source, uint32_t width, uint32_t height);
-        
-
 
 
     private:
