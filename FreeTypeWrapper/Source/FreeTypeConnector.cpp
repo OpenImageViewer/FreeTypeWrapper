@@ -25,6 +25,26 @@
 namespace FreeType
 {
 
+    namespace
+    {
+        FT_Render_Mode GetRenderMode(RenderMode renderMode)
+        {
+            switch (renderMode)
+            {
+            case RenderMode::Aliased:
+                return FT_Render_Mode::FT_RENDER_MODE_MONO;
+            case RenderMode::Default:
+            case RenderMode::Antialiased:
+                return FT_Render_Mode::FT_RENDER_MODE_NORMAL;
+            case RenderMode::SubpixelAntiAliased:
+                return FT_Render_Mode::FT_RENDER_MODE_LCD;
+            default:
+                return FT_Render_Mode::FT_RENDER_MODE_NORMAL;
+
+            }
+        }
+    }
+
     FreeTypeConnector::FreeTypeConnector()
     {
 
@@ -111,8 +131,8 @@ namespace FreeType
 
         mesureResult = {};
 
-        int penX = 0;
-        int penY = 0;
+        int32_t penX = 0;
+        int32_t penY = 0;
         mesureResult.lineMetrics.push_back({});
         LineMetrics* currentLine = &mesureResult.lineMetrics.back();
         
@@ -186,10 +206,10 @@ namespace FreeType
                     auto left = bitmapGlyph->left;
                     auto top = bitmapGlyph->top;
 
-                    currentLine->maxGlyphHeight = std::max<int32_t>(currentLine->maxGlyphHeight, height - top);
+                    currentLine->maxGlyphHeight = std::max<int32_t>(currentLine->maxGlyphHeight, static_cast<int32_t>(height) - top);
                     
                     mesureResult.minX = std::min<int32_t>(mesureResult.minX, left + penX);
-                    mesureResult.maxX = std::max<int32_t>(mesureResult.maxX, left + width + penX );
+                    mesureResult.maxX = std::max<int32_t>(mesureResult.maxX, left + static_cast<int32_t>(width) + penX );
 
                 
                     FT_Done_Glyph(glyph);
@@ -208,15 +228,15 @@ namespace FreeType
                     if (OptimizeOutlineRendering == true && renderOutline == true)
                     {
                         //Do this for optimized estimation
-                        currentLine->maxGlyphHeight = std::max<int32_t>(currentLine->maxGlyphHeight, height - top + OutlineWidth);
-                        mesureResult.minX = std::min<int32_t>(mesureResult.minX, left + penX - OutlineWidth - 1);
-                        mesureResult.maxX = std::max<int32_t>(mesureResult.maxX, left + width + penX + OutlineWidth + 1);
+                        currentLine->maxGlyphHeight = std::max<int32_t>(currentLine->maxGlyphHeight, static_cast<int32_t>(height) - top + static_cast<int32_t>(OutlineWidth));
+                        mesureResult.minX = std::min<int32_t>(mesureResult.minX, left + penX - static_cast<int32_t>(OutlineWidth) - 1);
+                        mesureResult.maxX = std::max<int32_t>(mesureResult.maxX, left + static_cast<int32_t>(width) + penX + static_cast<int32_t>(OutlineWidth) + 1);
                     }
                     else
                     {
-                        currentLine->maxGlyphHeight = std::max<int32_t>(currentLine->maxGlyphHeight, height - top);
+                        currentLine->maxGlyphHeight = std::max<int32_t>(currentLine->maxGlyphHeight, static_cast<int32_t>(height) - top);
                         mesureResult.minX = std::min<int32_t>(mesureResult.minX, left + penX);
-                        mesureResult.maxX = std::max<int32_t>(mesureResult.maxX, left + width + penX);
+                        mesureResult.maxX = std::max<int32_t>(mesureResult.maxX, left + static_cast<int32_t>(width) + penX);
                     }
 
 
@@ -276,24 +296,6 @@ namespace FreeType
                 destPtr[y * width + x] = static_cast<dest_type>(sourcePtr[y * width + x].DivideAlpha());
             }
 	}
-
-    FT_Render_Mode FreeTypeConnector::GetRenderMode(RenderMode renderMode) const
-    {
-        switch (renderMode)
-        {
-        case RenderMode::Aliased:
-            return FT_Render_Mode::FT_RENDER_MODE_MONO;
-        case RenderMode::Default:
-        case RenderMode::Antialiased:
-            return FT_Render_Mode::FT_RENDER_MODE_NORMAL;
-        case RenderMode::SubpixelAntiAliased:
-            return FT_Render_Mode::FT_RENDER_MODE_LCD;
-        default:
-            return FT_Render_Mode::FT_RENDER_MODE_NORMAL;
-
-        }
-    }
-
 
 
     void FreeTypeConnector::CreateBitmap(const TextCreateParams& textCreateParams
