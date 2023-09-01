@@ -70,6 +70,8 @@ namespace FreeType
             infoHeader.biSize = 40;
             infoHeader.biSizeImage = rowPitch * fBitmapBuffer.height;
 
+            fileHeader.bfSize = fileHeader.bfOffBits + infoHeader.biSizeImage;
+
             LLUtils::Buffer flipped(fBitmapBuffer.height * fBitmapBuffer.rowPitch);
 
 
