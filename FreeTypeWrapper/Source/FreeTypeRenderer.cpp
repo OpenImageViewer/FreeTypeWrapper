@@ -9,6 +9,37 @@
 
 namespace FreeType
 {
+
+    FT_BitmapGlyph FreeTypeRenderer::GetStrokerGlyph(FT_Stroker stroker,FT_GlyphSlot glyphSlot, uint32_t outlineWidth, FT_Render_Mode renderMode)
+    {
+        //  2 * 64 result in 2px outline
+        FT_Stroker_Set(stroker, static_cast<FT_Fixed>(outlineWidth * 64), FT_STROKER_LINECAP_ROUND, FT_STROKER_LINEJOIN_BEVEL, 0);
+        FT_Glyph glyph;
+        FT_Get_Glyph(glyphSlot, &glyph);
+        FT_Glyph_StrokeBorder(&glyph, stroker, false, true);
+        FT_Glyph_To_Bitmap(&glyph, renderMode, nullptr, true);
+        FT_BitmapGlyph bitmapGlyph = reinterpret_cast<FT_BitmapGlyph>(glyph);
+        return bitmapGlyph;
+    }
+
+
+    FT_Render_Mode FreeTypeRenderer::GetRenderMode(RenderMode renderMode)
+    {
+        switch (renderMode)
+        {
+        case RenderMode::Aliased:
+            return FT_Render_Mode::FT_RENDER_MODE_MONO;
+        case RenderMode::Default:
+        case RenderMode::Antialiased:
+            return FT_Render_Mode::FT_RENDER_MODE_NORMAL;
+        case RenderMode::SubpixelAntiAliased:
+            return FT_Render_Mode::FT_RENDER_MODE_LCD;
+        default:
+            return FT_Render_Mode::FT_RENDER_MODE_NORMAL;
+
+        }
+    }
+
     FreeTypeRenderer::BitmapProperties FreeTypeRenderer::GetBitmapGlyphProperties(const FT_Bitmap bitmap)
     {
         FreeTypeRenderer::BitmapProperties bitmapProperties;
@@ -114,15 +145,14 @@ namespace FreeType
                     const uint8_t GC = bitmap.buffer[currentPixelPos + 1];
                     const uint8_t RC = bitmap.buffer[currentPixelPos + 2];
                     const uint8_t AC = static_cast<uint8_t>(((int)RC + (int)GC + (int)BC) / 3);
-
-
+                    const uint8_t INVAC = static_cast < uint8_t>(255 - AC);
 
                     finalColorPremul =
                     {
-                              static_cast<uint8_t>((textColor.R()* RC) / 0xFF)
-                            , static_cast<uint8_t>((textColor.G()* GC) / 0xFF)
-                            , static_cast<uint8_t>((textColor.B()* BC) / 0xFF)
-                            , static_cast<uint8_t>(AC * textColor.A() / 0xFF)
+                              static_cast<uint8_t>((textColor.R() * AC + BC * INVAC) / 0xFF)
+                            , static_cast<uint8_t>((textColor.G() * AC + GC * INVAC) / 0xFF)
+                            , static_cast<uint8_t>((textColor.B() * AC + RC * INVAC) / 0xFF)
+                            , static_cast<uint8_t>(AC)
                     };
         
                 }

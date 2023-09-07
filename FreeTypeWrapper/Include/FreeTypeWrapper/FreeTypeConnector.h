@@ -4,11 +4,12 @@
 #include <cstdint>
 #include <string>
 
+#include <FreeTypeWrapper/FreeTypeCommon.h>
+
 #include <LLUtils/Color.h>
 #include <LLUtils/Buffer.h>
 #include <LLUtils/Rect.h>
 #include <LLUtils/EnumClassBitwise.h>
-
 
 
 #pragma region FreeType forward declerations
@@ -25,19 +26,18 @@ namespace FreeType
     class FreeTypeFont;
     using FreeTypeFontUniquePtr = std::unique_ptr<FreeTypeFont>;
 
-    enum class RenderMode
-    {
-          Default
-        , Aliased
-        , Antialiased
-        , SubpixelAntiAliased
-    };
 
     enum class TextCreateFlags
     {
           None
-        , UseMetaText   = 1 << 0
-        , Bidirectional = 1 << 1
+          // Use meta text for inline text style, e.g. color, size
+        , UseMetaText               = 1 << 0
+         // Use bidirectional text RTL and LTR.
+        , Bidirectional             = 1 << 1
+        // Add to the end of the line several pixels as descibed in the font , usefull for fixed width fonts.
+        , LineEndFixedWidth         = 1 << 2
+        // Don't Generate outline bitmaps when measuring text, use an estimation.
+        //, OptimizeOutlineMetrics    = 1 << 3
     };
 
     LLUTILS_DEFINE_ENUM_CLASS_FLAG_OPERATIONS(TextCreateFlags)
@@ -72,7 +72,7 @@ namespace FreeType
 
     struct TextMetrics
     {
-        std::vector< LineMetrics> lineMetrics;
+        std::vector<LineMetrics> lineMetrics;
         LLUtils::RectI32 rect;
         uint32_t rowHeight;
         int32_t minX = std::numeric_limits<int32_t>::max();

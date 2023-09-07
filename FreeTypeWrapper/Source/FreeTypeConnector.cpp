@@ -12,6 +12,7 @@
 #include <LLUtils/Utility.h>
 #include <LLUtils/Color.h>
 #include <LLUtils/Buffer.h>
+#include <LLUtils/BitFlags.h>
 
 #include "BlitBox.h"
 #include "MetaTextParser.h"
@@ -25,25 +26,7 @@
 namespace FreeType
 {
 
-    namespace
-    {
-        FT_Render_Mode GetRenderMode(RenderMode renderMode)
-        {
-            switch (renderMode)
-            {
-            case RenderMode::Aliased:
-                return FT_Render_Mode::FT_RENDER_MODE_MONO;
-            case RenderMode::Default:
-            case RenderMode::Antialiased:
-                return FT_Render_Mode::FT_RENDER_MODE_NORMAL;
-            case RenderMode::SubpixelAntiAliased:
-                return FT_Render_Mode::FT_RENDER_MODE_LCD;
-            default:
-                return FT_Render_Mode::FT_RENDER_MODE_NORMAL;
 
-            }
-        }
-    }
 
     FreeTypeConnector::FreeTypeConnector()
     {
@@ -112,27 +95,34 @@ namespace FreeType
         // If enabled, outline is not rendererd, but an estimation is given for the size of the final image
         constexpr bool OptimizeOutlineRendering = true;
 
-        auto textCreateParams = measureParams.createParams;
+        const auto textCreateParams = measureParams.createParams;
+        const BitFlags<TextCreateFlags> createFlags{ textCreateParams.flags };
+        const bool useMetaText = createFlags.test(TextCreateFlags::UseMetaText);
+        const bool lineEndFixedWidth = createFlags.test(TextCreateFlags::LineEndFixedWidth);
+        const bool usebidiText = createFlags.test(TextCreateFlags::Bidirectional);
 
-        const  std::wstring text = textCreateParams.text;
+        const std::wstring text = textCreateParams.text;
         const std::wstring& fontPath = textCreateParams.fontPath;
         const uint16_t fontSize = textCreateParams.fontSize;
         const uint32_t OutlineWidth = textCreateParams.outlineWidth;
         const LLUtils::Color outlineColor = textCreateParams.outlineColor;
         const LLUtils::Color backgroundColor = textCreateParams.backgroundColor;
-        const FT_Render_Mode textRenderMOde = GetRenderMode(textCreateParams.renderMode);
+        FT_Render_Mode textRenderMOde = FreeTypeRenderer::GetRenderMode(textCreateParams.renderMode);
+        FT_Render_Mode outlineRenderMode = FreeTypeRenderer::GetRenderMode(textCreateParams.renderMode);
+        const bool renderOutline = OutlineWidth > 0;
+
+        if (textRenderMOde == FT_Render_Mode::FT_RENDER_MODE_LCD && renderOutline == true)
+        {
+            textRenderMOde = FT_Render_Mode::FT_RENDER_MODE_NORMAL;
+        }
 
         FreeTypeFont* font = GetOrCreateFont(fontPath);
-
         font->SetSize(fontSize, textCreateParams.DPIx, textCreateParams.DPIy);
-        
-        const bool renderOutline = OutlineWidth > 0;
-        const bool renderText = true;
 
         mesureResult = {};
 
-        int32_t penX = 0;
-        int32_t penY = 0;
+        int32_t penX{};
+        int32_t penY{};
         mesureResult.lineMetrics.push_back({});
         LineMetrics* currentLine = &mesureResult.lineMetrics.back();
         
@@ -142,15 +132,15 @@ namespace FreeType
         const uint32_t rowHeight = (static_cast<uint32_t>(face->size->metrics.height) >> 6) + textCreateParams.outlineWidth * 2;
 
         vector<FormattedTextEntry> formattedText;
-        if ((textCreateParams.flags & TextCreateFlags::UseMetaText) == TextCreateFlags::UseMetaText)
+
+        if (useMetaText)
             formattedText = MetaText::GetFormattedText(text);
         else
             formattedText.push_back({ textCreateParams.textColor, textCreateParams.text });
 
         for (const FormattedTextEntry& el : formattedText)
         {
-            const std::u32string visualText = ((textCreateParams.flags & TextCreateFlags::Bidirectional) == TextCreateFlags::Bidirectional)
-                ? bidi_string(el.text.c_str()) : ww898::utf::conv<char32_t>(el.text);
+            const std::u32string visualText = usebidiText ? bidi_string(el.text.c_str()) : ww898::utf::conv<char32_t>(el.text);
 
             for (const decltype(visualText)::value_type& codepoint : visualText)
             {
@@ -163,11 +153,12 @@ namespace FreeType
                     continue;
                 }
 
+
                 const FT_UInt glyph_index = FT_Get_Char_Index(face, codepoint);
                 if (FT_Error error = FT_Load_Glyph(
                     face,          /* handle to face object */
                     glyph_index,   /* glyph index           */
-                    FT_LOAD_BITMAP_METRICS_ONLY); error != FT_Err_Ok)/* load flags, see below */
+                    FT_LOAD_DEFAULT); error != FT_Err_Ok)/* load flags, see below */
                 {
                     LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, GenerateFreeTypeErrorString("can not Load glyph", error));
                 }
@@ -184,64 +175,53 @@ namespace FreeType
                     currentLine = &mesureResult.lineMetrics.back();
                 }
 
-                if (renderOutline && !OptimizeOutlineRendering) // measure outline
+                // measure outline
+                if (renderOutline) 
                 {
-                    //Generate outline bitmaps:
-                    //TODO: optimize this out by using stroker metrics only if possible
-                    //initialize stroker, so you can create outline font
-                    FT_Stroker stroker = GetStroker();
-
-                    //  2 * 64 result in 2px outline
-                    FT_Stroker_Set(stroker, static_cast<FT_Fixed>(OutlineWidth * 64), FT_STROKER_LINECAP_ROUND, FT_STROKER_LINEJOIN_BEVEL, 0);
-                    FT_Glyph glyph;
-                    FT_Get_Glyph(face->glyph, &glyph);
-                    FT_Glyph_StrokeBorder(&glyph, stroker, false, true);
-                    FT_Glyph_To_Bitmap(&glyph, textRenderMOde, nullptr, true);
-
-                    FT_BitmapGlyph bitmapGlyph = reinterpret_cast<FT_BitmapGlyph>(glyph);
+                    FT_BitmapGlyph bitmapGlyph = FreeTypeRenderer::GetStrokerGlyph(GetStroker(), face->glyph, OutlineWidth, outlineRenderMode);
                     FreeTypeRenderer::BitmapProperties bitmapProperties = FreeTypeRenderer::GetBitmapGlyphProperties(bitmapGlyph->bitmap);
-
                     auto width = bitmapProperties.width;
                     auto height = bitmapProperties.height;
                     auto left = bitmapGlyph->left;
                     auto top = bitmapGlyph->top;
 
                     currentLine->maxGlyphHeight = std::max<int32_t>(currentLine->maxGlyphHeight, static_cast<int32_t>(height) - top);
-                    
+
                     mesureResult.minX = std::min<int32_t>(mesureResult.minX, left + penX);
-                    mesureResult.maxX = std::max<int32_t>(mesureResult.maxX, left + static_cast<int32_t>(width) + penX );
-
+                    mesureResult.maxX = std::max<int32_t>(mesureResult.maxX, left + static_cast<int32_t>(width) + penX);
+                    FT_Done_Glyph(reinterpret_cast<FT_Glyph>(bitmapGlyph));
+                }
                 
-                    FT_Done_Glyph(glyph);
+                // Measure Text
 
-                }
-                // Render text
-                if (renderText)
+                FT_Glyph glyph;
+                if (FT_Error error = FT_Get_Glyph(face->glyph, &glyph))
+                    LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, "FreeType error, unable to render glyph");
+
+                if (glyph->format != FT_GLYPH_FORMAT_BITMAP)
                 {
-                    FreeTypeRenderer::BitmapProperties bitmapProperties = FreeTypeRenderer::GetBitmapGlyphProperties(face->glyph->bitmap);
-
-                    auto width = bitmapProperties.width;
-                    auto height = bitmapProperties.height;
-                    auto left = face->glyph->bitmap_left;
-                    auto top = face->glyph->bitmap_top;
-                    
-                    if (OptimizeOutlineRendering == true && renderOutline == true)
-                    {
-                        //Do this for optimized estimation
-                        currentLine->maxGlyphHeight = std::max<int32_t>(currentLine->maxGlyphHeight, static_cast<int32_t>(height) - top + static_cast<int32_t>(OutlineWidth));
-                        mesureResult.minX = std::min<int32_t>(mesureResult.minX, left + penX - static_cast<int32_t>(OutlineWidth) - 1);
-                        mesureResult.maxX = std::max<int32_t>(mesureResult.maxX, left + static_cast<int32_t>(width) + penX + static_cast<int32_t>(OutlineWidth) + 1);
-                    }
-                    else
-                    {
-                        currentLine->maxGlyphHeight = std::max<int32_t>(currentLine->maxGlyphHeight, static_cast<int32_t>(height) - top);
-                        mesureResult.minX = std::min<int32_t>(mesureResult.minX, left + penX);
-                        mesureResult.maxX = std::max<int32_t>(mesureResult.maxX, left + static_cast<int32_t>(width) + penX);
-                    }
-
-
-                    penX += advance;
+                    if (FT_Error error = FT_Glyph_To_Bitmap(&glyph, textRenderMOde, nullptr, true); error != FT_Err_Ok)
+                        LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, "FreeType error, unable to render glyph");
                 }
+
+                FT_BitmapGlyph bitmapGlyph = reinterpret_cast<FT_BitmapGlyph>(glyph);
+                FreeTypeRenderer::BitmapProperties bitmapProperties = FreeTypeRenderer::GetBitmapGlyphProperties(bitmapGlyph->bitmap);
+
+
+                auto width = bitmapProperties.width;
+                auto height = bitmapProperties.height;
+                auto left = bitmapGlyph->left;
+                auto top = bitmapGlyph->top;
+
+                currentLine->maxGlyphHeight = std::max<int32_t>(currentLine->maxGlyphHeight, static_cast<int32_t>(height) - top);
+                mesureResult.minX = std::min<int32_t>(mesureResult.minX, left + penX);
+                mesureResult.maxX = std::max<int32_t>(mesureResult.maxX, left + static_cast<int32_t>(width) + penX);
+
+                penX += advance;
+
+                if (lineEndFixedWidth)
+                    mesureResult.maxX = std::max(penX, mesureResult.maxX);
+
             }
         }
 
@@ -306,13 +286,28 @@ namespace FreeType
     {
         using namespace std;
 
-        const  std::wstring text = textCreateParams.text;
+        const std::wstring text = textCreateParams.text;
         const std::wstring& fontPath = textCreateParams.fontPath;
         const uint16_t fontSize = textCreateParams.fontSize;
         const uint32_t OutlineWidth = textCreateParams.outlineWidth;
         const LLUtils::Color outlineColor = textCreateParams.outlineColor;
         const LLUtils::Color backgroundColor = textCreateParams.backgroundColor;
-        const FT_Render_Mode textRenderMOde = GetRenderMode(textCreateParams.renderMode);
+
+        FT_Render_Mode textRenderMOde = FreeTypeRenderer::GetRenderMode(textCreateParams.renderMode);
+        FT_Render_Mode outlineRenderMode = FreeTypeRenderer::GetRenderMode(textCreateParams.renderMode);
+        const bool renderOutline = OutlineWidth > 0;
+
+        if (textRenderMOde == FT_Render_Mode::FT_RENDER_MODE_LCD && renderOutline == true)
+        {
+            textRenderMOde = FT_Render_Mode::FT_RENDER_MODE_NORMAL;
+        }
+
+
+
+        const LLUtils::BitFlags<TextCreateFlags> createFlags{ textCreateParams.flags };
+        const bool useMetaText = createFlags.test(TextCreateFlags::UseMetaText);
+        const bool usebidiText = createFlags.test(TextCreateFlags::Bidirectional);
+
 
         FreeTypeFont* font = GetOrCreateFont(fontPath);
 
@@ -334,8 +329,6 @@ namespace FreeType
         const uint32_t destPixelSize = sizeof(ColorF32);
         const uint32_t destRowPitch = mesaureResult.rect.GetWidth() * destPixelSize;
         const uint32_t sizeOfDestBuffer = mesaureResult.rect.GetHeight() * destRowPitch;
-        const bool renderOutline = OutlineWidth > 0;
-        const bool renderText = true;
 
         LLUtils::Buffer textBuffer(sizeOfDestBuffer);
 
@@ -384,7 +377,8 @@ namespace FreeType
         const uint32_t rowHeight = mesaureResult.rowHeight;
 
         vector<FormattedTextEntry> formattedText;
-        if ((textCreateParams.flags & TextCreateFlags::UseMetaText) == TextCreateFlags::UseMetaText)
+
+        if (useMetaText)
             formattedText = MetaText::GetFormattedText(text);
         else
             formattedText.push_back({ textCreateParams.textColor, textCreateParams.text });
@@ -393,9 +387,8 @@ namespace FreeType
 
         for (const FormattedTextEntry& el : formattedText)
         {
-            const std::u32string visualText = ((textCreateParams.flags & TextCreateFlags::Bidirectional) == TextCreateFlags::Bidirectional)
-                ? bidi_string(el.text.c_str()) : ww898::utf::conv<char32_t>(el.text);
-            
+            const std::u32string visualText = usebidiText ? bidi_string(el.text.c_str()) : ww898::utf::conv<char32_t>(el.text);
+
             for (const decltype(visualText)::value_type& codepoint : visualText)
             {
                 if (codepoint == L'\n')
@@ -414,10 +407,10 @@ namespace FreeType
                     LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, GenerateFreeTypeErrorString("can not Load glyph", error));
                 }
 
-				
+
                 //Render outline
                 const auto advance = face->glyph->advance.x >> 6;
-                
+
                 if (textCreateParams.maxWidthPx > 0 && penX + advance + mesaureResult.rect.LeftTop().x > static_cast<int>(textCreateParams.maxWidthPx))
                 {
                     penY += rowHeight;
@@ -429,19 +422,10 @@ namespace FreeType
 
                 if (renderOutline) // render outline
                 {
-                    //initialize stroker, so you can create outline font
-                    FT_Stroker stroker = GetStroker();
 
-                    //  2 * 64 result in 2px outline
-                    FT_Stroker_Set(stroker, static_cast<FT_Fixed>(OutlineWidth * 64), FT_STROKER_LINECAP_ROUND, FT_STROKER_LINEJOIN_BEVEL, 0);
-                    FT_Glyph glyph;
-                    FT_Get_Glyph(face->glyph, &glyph);
-                    FT_Glyph_StrokeBorder(&glyph, stroker, false, true);
-                    FT_Glyph_To_Bitmap(&glyph, textRenderMOde, nullptr, true);
-                    FT_BitmapGlyph bitmapGlyph = reinterpret_cast<FT_BitmapGlyph>(glyph);
+                    FT_BitmapGlyph bitmapGlyph = FreeTypeRenderer::GetStrokerGlyph(GetStroker(), face->glyph, OutlineWidth, outlineRenderMode);
                     FreeTypeRenderer::BitmapProperties bitmapProperties = FreeTypeRenderer::GetBitmapGlyphProperties(bitmapGlyph->bitmap);
                     LLUtils::Buffer rasterizedGlyph = FreeTypeRenderer::RenderGlyphToBuffer({ bitmapGlyph , {0,0,0,0} ,outlineColor, bitmapProperties });
-
 
                     BlitBox source = {};
                     source.buffer = rasterizedGlyph.data();
@@ -453,52 +437,47 @@ namespace FreeType
                     destOutline.left = static_cast<uint32_t>(penX + bitmapGlyph->left);
                     destOutline.top = baseVerticalPos - bitmapGlyph->top;
                     BlitBox::BlitPremultiplied<ColorF32>(destOutline, source);
-
-                    FT_Done_Glyph(glyph);
+                    FT_Done_Glyph(reinterpret_cast<FT_Glyph>(bitmapGlyph));
 
                 }
                 // Render text
-                if (renderText)
+
+                FT_Glyph glyph;
+                if (FT_Error error = FT_Get_Glyph(face->glyph, &glyph))
+                    LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, "FreeType error, unable to render glyph");
+
+                if (glyph->format != FT_GLYPH_FORMAT_BITMAP)
                 {
-                    FT_Glyph glyph;
-                    if (FT_Error error = FT_Get_Glyph(face->glyph, &glyph))
+                    if (FT_Error error = FT_Glyph_To_Bitmap(&glyph, textRenderMOde, nullptr, true); error != FT_Err_Ok)
                         LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, "FreeType error, unable to render glyph");
-
-                    if (glyph->format != FT_GLYPH_FORMAT_BITMAP)
-                    {
-                        if (FT_Error error = FT_Glyph_To_Bitmap(&glyph, textRenderMOde, nullptr, true); error != FT_Err_Ok)
-                            LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, "FreeType error, unable to render glyph");
-                    }
-
-                    FT_BitmapGlyph bitmapGlyph = reinterpret_cast<FT_BitmapGlyph>(glyph);
-                    FreeTypeRenderer::BitmapProperties bitmapProperties = FreeTypeRenderer::GetBitmapGlyphProperties(bitmapGlyph->bitmap);
-                    const auto textcolor = el.textColor != Color{0, 0, 0, 0} ? el.textColor : params.createParams.textColor;
-
-                    LLUtils::Buffer rasterizedGlyph = FreeTypeRenderer::RenderGlyphToBuffer({ bitmapGlyph , backgroundColor, textcolor , bitmapProperties });
-
-                    BlitBox source = {};
-                    source.buffer = rasterizedGlyph.data();
-                    source.width = bitmapProperties.width;
-                    source.height = bitmapProperties.height;
-                    source.pixelSizeInbytes = destPixelSize;
-                    source.rowPitch = destPixelSize * bitmapProperties.width;
-
-                    dest.left = static_cast<uint32_t>(penX +  bitmapGlyph->left);
-                    dest.top = baseVerticalPos - bitmapGlyph->top;
-                    
-                    if (out_glyphMapping != nullptr)
-                    {
-                        out_glyphMapping->push_back(LLUtils::RectI32{ { penX, penY } ,
-                            {penX + static_cast<int32_t>(advance), penY + static_cast<int32_t>(rowHeight)} });
-                    }
-
-                    penX += advance;
-
-                    FT_Done_Glyph(glyph);
-                    BlitBox::BlitPremultiplied<ColorF32>(dest, source);
-                    
-
                 }
+
+                FT_BitmapGlyph bitmapGlyph = reinterpret_cast<FT_BitmapGlyph>(glyph);
+                FreeTypeRenderer::BitmapProperties bitmapProperties = FreeTypeRenderer::GetBitmapGlyphProperties(bitmapGlyph->bitmap);
+                const auto textcolor = el.textColor != Color{ 0, 0, 0, 0 } ? el.textColor : params.createParams.textColor;
+
+                LLUtils::Buffer rasterizedGlyph = FreeTypeRenderer::RenderGlyphToBuffer({ bitmapGlyph , backgroundColor, textcolor , bitmapProperties });
+
+                BlitBox source = {};
+                source.buffer = rasterizedGlyph.data();
+                source.width = bitmapProperties.width;
+                source.height = bitmapProperties.height;
+                source.pixelSizeInbytes = destPixelSize;
+                source.rowPitch = destPixelSize * bitmapProperties.width;
+
+                dest.left = static_cast<uint32_t>(penX + bitmapGlyph->left);
+                dest.top = baseVerticalPos - bitmapGlyph->top;
+
+                if (out_glyphMapping != nullptr)
+                {
+                    out_glyphMapping->push_back(LLUtils::RectI32{ { penX, penY } ,
+                        {penX + static_cast<int32_t>(advance), penY + static_cast<int32_t>(rowHeight)} });
+                }
+
+                penX += advance;
+
+                FT_Done_Glyph(glyph);
+                BlitBox::BlitPremultiplied<ColorF32>(dest, source);
             }
         }
 

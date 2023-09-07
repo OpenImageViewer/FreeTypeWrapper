@@ -2,10 +2,9 @@
 #include <cstdint>
 #include <LLUtils/Color.h>
 #include <LLUtils/Buffer.h>
+#include <FreeTypeHeaders.h>
+#include <FreeTypeWrapper/FreeTypeCommon.h>
 
-
-typedef struct FT_BitmapGlyphRec_* FT_BitmapGlyph;
-struct FT_Bitmap_;
 namespace FreeType
 {
     class FreeTypeRenderer
@@ -28,7 +27,8 @@ namespace FreeType
             BitmapProperties bitmapProperties;
         };
 
-
+        static FT_BitmapGlyph GetStrokerGlyph(FT_Stroker stroker, FT_GlyphSlot glyphSlot, uint32_t outlineWidth, FT_Render_Mode renderMode);
+        static FT_Render_Mode GetRenderMode(RenderMode renderMode);
         static BitmapProperties GetBitmapGlyphProperties(const FT_Bitmap_ bitmap);
         static LLUtils::Buffer RenderGlyphToBuffer(const GlyphRGBAParams& params);
 
