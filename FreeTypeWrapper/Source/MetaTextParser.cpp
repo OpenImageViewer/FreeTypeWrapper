@@ -85,7 +85,7 @@ namespace FreeType
                 {
                     string_type tagContents = text.substr(static_cast<size_t>(beginTag), static_cast<size_t>(endTag - beginTag + 1));
 
-                    string_type textInsideTag = text.substr(static_cast<size_t>(endTag + 1), static_cast<size_t>(i - (endTag + 1)));
+                    string_type textInsideTag = text.substr(static_cast<size_t>(endTag + 1), static_cast<size_t>(static_cast<ptrdiff_t>(i) - (endTag + 1)));
                     beginTag = static_cast<ptrdiff_t>(i);
                     endTag = -1;
 

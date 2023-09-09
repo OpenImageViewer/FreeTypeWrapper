@@ -6,6 +6,7 @@
 #include <LLUtils/Exception.h>
 #include <LLUtils/Buffer.h>
 #include <FreeTypeRenderer.h>
+#include <span>
 
 namespace FreeType
 {
@@ -74,21 +75,18 @@ namespace FreeType
         using namespace LLUtils;
 
         FT_Bitmap bitmap = params.bitmapGlyph->bitmap;
-
+        std::span bitmapBuffer = std::span(params.bitmapGlyph->bitmap.buffer,  static_cast<size_t>(bitmap.rows * static_cast<unsigned int>(bitmap.pitch)));
 
         const int destPixelSize = sizeof(ColorF32);
         const uint32_t HeightInPixels = params.bitmapProperties.height;
         const uint32_t widthInPixels = params.bitmapProperties.width;
         
         Color textColor = params.textColor;
-        //ColorF32 textColor = static_cast<ColorF32>(params.textColor).MultiplyAlpha();
 
         const size_t bufferSize = widthInPixels * HeightInPixels * destPixelSize;
         LLUtils::Buffer RGBABitmap(bufferSize);
-
-        // Fill glyph background with background color.
-        ColorF32* RGBABitmapPtr = reinterpret_cast<ColorF32*>(RGBABitmap.data());
-        memset(RGBABitmapPtr, 0, RGBABitmap.size());
+        memset(RGBABitmap.data(), 0, RGBABitmap.size());
+        std::span<ColorF32,std::dynamic_extent> RGBABitmapPtr(reinterpret_cast<ColorF32*>(RGBABitmap.data()), widthInPixels * HeightInPixels);
 
         uint32_t sourceRowStart = 0;
 
@@ -109,7 +107,7 @@ namespace FreeType
                     {
                         const auto bytePos = sourceRowStart +  (x / 8);
                         const auto bitPos = 8 - (x % 8) - 1;
-                        const auto bitValue = ((bitmap.buffer[bytePos] & (1 << bitPos)) >> bitPos);// *255;
+                        const auto bitValue = ((bitmapBuffer[bytePos] & (1 << bitPos)) >> bitPos);// *255;
 
                         finalColorPremul =
                         {
@@ -129,10 +127,12 @@ namespace FreeType
                               textColorFloat.R()
                             , textColorFloat.G()
                             , textColorFloat.B()
-                            , textColorFloat.A() * static_cast<decltype(textColorFloat)::color_channel_type>(bitmap.buffer[sourceRowStart + x + 0] / 255.0)
+                            , textColorFloat.A() * static_cast<decltype(textColorFloat)::color_channel_type>(bitmapBuffer[sourceRowStart + x + 0] / 255.0)
                         };
                         
                         break;
+                    default:
+                        LL_EXCEPTION_UNEXPECTED_VALUE;
                     }
 
                     break;
@@ -141,10 +141,10 @@ namespace FreeType
                 {
                     const uint32_t currentPixelPos = sourceRowStart + x * params.bitmapProperties.numChannels;
 
-                    const uint8_t BC = bitmap.buffer[currentPixelPos + 0];
-                    const uint8_t GC = bitmap.buffer[currentPixelPos + 1];
-                    const uint8_t RC = bitmap.buffer[currentPixelPos + 2];
-                    const uint8_t AC = static_cast<uint8_t>(((int)RC + (int)GC + (int)BC) / 3);
+                    const uint8_t BC = bitmapBuffer[currentPixelPos + 0];
+                    const uint8_t GC = bitmapBuffer[currentPixelPos + 1];
+                    const uint8_t RC = bitmapBuffer[currentPixelPos + 2];
+                    const uint8_t AC = static_cast<uint8_t>(( static_cast<int>(RC) + static_cast<int>(GC) + static_cast<int>(BC)) / 3);
                     const uint8_t INVAC = static_cast < uint8_t>(255 - AC);
 
                     finalColorPremul =
@@ -154,7 +154,6 @@ namespace FreeType
                             , static_cast<uint8_t>((textColor.B() * AC + RC * INVAC) / 0xFF)
                             , static_cast<uint8_t>(AC)
                     };
-        
                 }
                     
                 break;

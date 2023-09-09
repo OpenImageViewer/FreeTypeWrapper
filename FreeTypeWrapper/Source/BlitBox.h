@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <LLUtils/Warnings.h>
 namespace FreeType
 {
     struct BlitBox
@@ -20,13 +21,16 @@ namespace FreeType
         template <typename color_type>
         static void BlitPremultiplied (BlitBox& dst, const BlitBox& src)
         {
+LLUTILS_DISABLE_WARNING_PUSH
+LLUTILS_DISABLE_WARNING_UNSAFE_BUFFER_USAGE
+
             const std::byte* srcPos = src.buffer + src.GetStartOffset();
             std::byte* dstPos = dst.buffer + dst.GetStartOffset();
 
             //Perform range check on target.
             if (dst.left + src.width > dst.width || dst.top + src.height > dst.height)
                 LL_EXCEPTION(LLUtils::Exception::ErrorCode::LogicError, "Buffer out of bounds");
-
+LLUTILS_DISABLE_WARNING_POP            
             const uint32_t bytesPerLine = src.pixelSizeInbytes * src.width;
 
             for (uint32_t y = src.top; y < src.height; y++)
@@ -47,13 +51,15 @@ namespace FreeType
 
         static void Blit(BlitBox& dst, const BlitBox& src)
         {
+LLUTILS_DISABLE_WARNING_PUSH
+LLUTILS_DISABLE_WARNING_UNSAFE_BUFFER_USAGE
             const std::byte* srcPos = src.buffer + src.GetStartOffset();
             std::byte* dstPos = dst.buffer + dst.GetStartOffset();
 
             //Perform range check on target.
             if (dst.left + src.width > dst.width || dst.top + src.height > dst.height)
                 LL_EXCEPTION(LLUtils::Exception::ErrorCode::LogicError, "Buffer out of bounds");
-
+LLUTILS_DISABLE_WARNING_POP
 
             const uint32_t bytesPerLine = src.pixelSizeInbytes * src.width;
 
