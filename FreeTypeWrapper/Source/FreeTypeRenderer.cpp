@@ -133,6 +133,8 @@ namespace FreeType
                         };
                         
                         break;
+                    default:
+                        LL_EXCEPTION_UNEXPECTED_VALUE;
                     }
 
                     break;

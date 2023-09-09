@@ -46,17 +46,17 @@ namespace FreeType
     {
         std::wstring fontPath;
         std::wstring text;
-        uint16_t fontSize;
+        uint16_t fontSize{};
         LLUtils::Color textColor;
         LLUtils::Color backgroundColor;
         LLUtils::Color outlineColor;
-        uint32_t outlineWidth;
-        uint32_t maxWidthPx;
-        RenderMode renderMode;
-        uint16_t DPIx;
-        uint16_t DPIy;
-        uint16_t padding;
-        TextCreateFlags flags;
+        uint32_t outlineWidth{};
+        uint32_t maxWidthPx{};
+        RenderMode renderMode{};
+        uint16_t DPIx{};
+        uint16_t DPIy{};
+        uint16_t padding{};
+        TextCreateFlags flags{};
     };
 
 
@@ -74,7 +74,7 @@ namespace FreeType
     {
         std::vector<LineMetrics> lineMetrics;
         LLUtils::RectI32 rect;
-        uint32_t rowHeight;
+        uint32_t rowHeight{};
         int32_t minX = std::numeric_limits<int32_t>::max();
         int32_t maxX = std::numeric_limits<int32_t>::min();
     };
@@ -89,11 +89,11 @@ namespace FreeType
 
         struct Bitmap
         {
-            uint32_t width;
-            uint32_t height;
-            LLUtils::Buffer buffer;
-            uint32_t PixelSize;
-            uint32_t rowPitch;
+            uint32_t width{};
+            uint32_t height{};
+            LLUtils::Buffer buffer{};
+            uint32_t PixelSize{};
+            uint32_t rowPitch{};
         };
 
 

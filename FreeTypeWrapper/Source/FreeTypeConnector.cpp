@@ -92,9 +92,6 @@ namespace FreeType
         using namespace std;
         using namespace LLUtils;
 
-        // If enabled, outline is not rendererd, but an estimation is given for the size of the final image
-        constexpr bool OptimizeOutlineRendering = true;
-
         const auto textCreateParams = measureParams.createParams;
         const BitFlags<TextCreateFlags> createFlags{ textCreateParams.flags };
         const bool useMetaText = createFlags.test(TextCreateFlags::UseMetaText);
