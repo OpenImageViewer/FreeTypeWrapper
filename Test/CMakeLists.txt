@@ -9,7 +9,8 @@ set(CMAKE_CXX_STANDARD 20)
 if(NOT TARGET FreeTypeTest)
     include_directories(../External/FreeTypeWrapper/Include)
 	# Add source to this project's executable.
-	add_executable (FreeTypeTest "Test.cpp")
+    set(TargetName FreeTypeTest)
+	add_executable (${TargetName} "Test.cpp")
 
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         #enabled warnings flags
@@ -25,9 +26,14 @@ if(NOT TARGET FreeTypeTest)
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
         endif()
     endif()
+
+    target_include_directories(${TargetName} PRIVATE ../FreeTypeWrapper/Include)
+    target_include_directories(${TargetName} PRIVATE ../FreeTypeWrapper/External/LLUtils/Include)
+    target_link_libraries(${TargetName} PRIVATE FreeTypeWrapper)
+
+    #Copy font to output dir 
+    add_custom_command(TARGET ${TargetName} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/CascadiaCode.ttf ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
+
 endif()
-
-target_include_directories(FreeTypeTest PRIVATE ../FreeTypeWrapper/Include)
-target_include_directories(FreeTypeTest PRIVATE ../FreeTypeWrapper/External/LLUtils/Include)
-
-target_link_libraries(FreeTypeTest PRIVATE FreeTypeWrapper)
+                                                                       

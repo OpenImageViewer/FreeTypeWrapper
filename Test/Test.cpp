@@ -31,13 +31,11 @@ SOFTWARE.
 
 std::filesystem::path folderToSaveFiles = "./testImages/";
 #if LLUTILS_PLATFORM ==  LLUTILS_PLATFORM_WIN32
-std::filesystem::path fontPathSegoei = L"c:/Windows/Fonts/segoeui.ttf";
-std::filesystem::path fontPathSegoeib = L"c:/Windows/Fonts/segoeuib.ttf";
-std::filesystem::path fontPathConsola = L"c:/Windows/Fonts/consola.ttf";
+	std::filesystem::path fontPathSegoei = L"c:/Windows/Fonts/segoeui.ttf";
+	std::filesystem::path fontPathSegoeib = L"c:/Windows/Fonts/segoeuib.ttf";
+	std::filesystem::path fontPathFixed = L"c:/Windows/Fonts/consola.ttf";
 #elif LLUTILS_PLATFORM ==  LLUTILS_PLATFORM_LINUX
-std::filesystem::path fontPathSegoei = L"c:/Windows/Fonts/segoeui.ttf";
-std::filesystem::path fontPathSegoeib = L"c:/Windows/Fonts/segoeuib.ttf";
-std::filesystem::path fontPathConsola = L"c:/Windows/Fonts/consola.ttf";
+	std::filesystem::path fontPathFixed = L"./CascadiaCode.ttf";
 #else
 	#pragma error "Non-compatible platform detected."
 #endif
@@ -78,7 +76,7 @@ void runTest(FreeType::FreeTypeConnector& freeType, FreeType::TextCreateParams f
 	FreeTypeConnector::Bitmap textBitmap;
 	freeType.CreateBitmap(freetypeParams, textBitmap, nullptr);
 
-	auto hash = XXH3_64bits(static_cast<const void*>(textBitmap.buffer.data()), textBitmap.height * textBitmap.rowPitch);
+	[[maybe_unused]] auto hash = XXH3_64bits(static_cast<const void*>(textBitmap.buffer.data()), textBitmap.height * textBitmap.rowPitch);
 	
 	if (testParams.saveToFile)
 		SaveToFile(textBitmap, testParams.fileName);
@@ -97,10 +95,12 @@ int runtests()
 	TestParams testParams{};
 	testParams.saveToFile = shouldSaveToFile;
 	//Several test cases, for now mostly checks for out of bounds errors, if there's no exceptions test is considered passed.
-
 	params.DPIx = 120;
 	params.DPIy = 120;
-	params.fontPath = fontPathSegoeib.wstring();
+
+#if LLUTILS_PLATFORM ==  LLUTILS_PLATFORM_WIN32
+		params.fontPath = fontPathSegoeib.wstring();
+
 	params.text = L"ijkjojujrjaj";
 	params.textColor = LLUtils::Colors::Black;
 	params.outlineColor = { 0,0,0,255 };
@@ -121,6 +121,8 @@ int runtests()
 	params.DPIx = 120;
 	params.DPIy = 120;
 	params.fontPath = fontPathSegoei.wstring();
+	
+	
 	params.text = L"<textcolor=#000000ff>|This| is זה משהו\n באמת משהו\nabcdefghijklmnopqrstuvwwxyz\nABCDEFGHIJKLMNOPQVWXYZ\n|!#_+";
 
 	params.backgroundColor = LLUtils::Colors::White;
@@ -135,8 +137,6 @@ int runtests()
 	testParams.expectedHash = 16738229490926515141u;
 
 	runTest(freeType, params, testParams);
-
-
 
 	//Several test cases, for now mostly checks for out of bounds errors, if there's no exceptions test is considered passed.
 
@@ -164,26 +164,6 @@ int runtests()
 	runTest(freeType, params, testParams);
 
 
-
-
-
-	//params.text = L"3000 X 1712 X 32 BPP | loaded in 92.7 ms";
-	params.text = L"Texel: 1218.3 X  584.6";
-	params.textColor = Colors::Lava;
-	params.fontPath = fontPathConsola.wstring();
-	params.renderMode = FreeType::RenderMode::SubpixelAntiAliased;
-	params.fontSize = 11;
-	params.backgroundColor = { 255, 255, 255, 192 };
-	params.DPIx = 120;
-	params.DPIy = 120;
-	//params.padding = 1;
-	testParams.fileName = (folderToSaveFiles / "test2.bmp").wstring();
-	testParams.expectedHash = 11320992707252375232u;
-	runTest(freeType, params, testParams);
-
-
-
-
 	params.text = L"<textcolor=#ff8930>windowed";
 	params.fontPath = fontPathSegoeib.wstring();
 	params.renderMode = FreeType::RenderMode::SubpixelAntiAliased;
@@ -198,11 +178,42 @@ int runtests()
 	runTest(freeType, params, testParams);
 
 
+	//Lower dpi mode
+	params.text = L"abcdefg.tif";
+	params.fontPath = fontPathSegoeib.wstring();
+	params.renderMode = FreeType::RenderMode::Antialiased;
+	params.fontSize = 12;
+	params.backgroundColor = { 255, 255, 255, 192 };
+	params.DPIx = 96;
+	params.DPIy = 96;
+	params.padding = 0;
+	params.outlineWidth = 2;
+
+	testParams.fileName = (folderToSaveFiles / L"test6.bmp").wstring();
+	testParams.expectedHash = 3439216908320477038u;
+	runTest(freeType, params, testParams);
+
+
+	// Test very thick outline 
+	params.text = L"<textcolor=#ff8930>windowed";
+	params.fontPath = fontPathSegoeib.wstring();
+	params.renderMode = FreeType::RenderMode::Antialiased;
+	params.fontSize = 11;
+	params.backgroundColor = { 255, 255, 255, 192 };
+	params.DPIx = 120;
+	params.DPIy = 120;
+	params.padding = 0;
+	params.outlineWidth = 20;
+
+	testParams.fileName = (folderToSaveFiles / "test5.bmp").wstring();
+	testParams.expectedHash = 4822496049661565882u;
+	runTest(freeType, params, testParams);
+
+#endif
 
 	//Test Fixed width font
-
 	params.text = L"<textcolor=#ff8930>444";
-	params.fontPath = fontPathConsola.wstring();
+	params.fontPath = fontPathFixed.wstring();
 	params.renderMode = FreeType::RenderMode::Antialiased;
 	params.fontSize = 11;
 	params.backgroundColor = { 255, 255, 255, 192 };
@@ -227,40 +238,14 @@ int runtests()
 		LL_EXCEPTION(LLUtils::Exception::ErrorCode::InvalidState, "mismatch size");*/
 
 
-		//test very thick outline 
-	params.text = L"<textcolor=#ff8930>windowed";
-	params.fontPath = fontPathSegoeib.wstring();
-	params.renderMode = FreeType::RenderMode::Antialiased;
-	params.fontSize = 11;
-	params.backgroundColor = { 255, 255, 255, 192 };
-	params.DPIx = 120;
-	params.DPIy = 120;
-	params.padding = 0;
-	params.outlineWidth = 20;
 
-	testParams.fileName = (folderToSaveFiles / "test5.bmp").wstring();
-	testParams.expectedHash = 4822496049661565882u;
-	runTest(freeType, params, testParams);
 
-	//Lower dpi mode
-	params.text = L"abcdefg.tif";
-	params.fontPath = fontPathSegoeib.wstring();
-	params.renderMode = FreeType::RenderMode::Antialiased;
-	params.fontSize = 12;
-	params.backgroundColor = { 255, 255, 255, 192 };
-	params.DPIx = 96;
-	params.DPIy = 96;
-	params.padding = 0;
-	params.outlineWidth = 2;
 
-	testParams.fileName = (folderToSaveFiles / L"test6.bmp").wstring();
-	testParams.expectedHash = 3439216908320477038u;
-	runTest(freeType, params, testParams);
 
 
 	//Test aliased text
 	params.text = L"<textcolor=#ff8930>aliased text";
-	params.fontPath = fontPathConsola.wstring();
+	params.fontPath = fontPathFixed.wstring();
 	params.outlineColor = { 0, 0, 0, 255 };
 	params.outlineWidth = 0;
 	params.renderMode = FreeType::RenderMode::Aliased;
@@ -274,6 +259,20 @@ int runtests()
 	testParams.expectedHash = 11631623323771771341u;
 	runTest(freeType, params, testParams);
 
+	//params.text = L"3000 X 1712 X 32 BPP | loaded in 92.7 ms";
+	params.text = L"Texel: 1218.3 X  584.6";
+	params.textColor = Colors::Lava;
+	params.fontPath = fontPathFixed.wstring();
+	params.renderMode = FreeType::RenderMode::SubpixelAntiAliased;
+	params.fontSize = 11;
+	params.backgroundColor = { 255, 255, 255, 192 };
+	params.DPIx = 120;
+	params.DPIy = 120;
+	//params.padding = 1;
+	testParams.fileName = (folderToSaveFiles / "test2.bmp").wstring();
+	testParams.expectedHash = 11320992707252375232u;
+	runTest(freeType, params, testParams);
+
 
 	return 0;
 }
@@ -283,11 +282,8 @@ int main()
 
 	try
 	{
-#if LLUTILS_PLATFORM ==  LLUTILS_PLATFORM_WIN32
-
 		if (runtests() == 0)
 			std::cout << "All tests passed successfully.";
-#endif
 
 	}
 	catch (...)
