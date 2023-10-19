@@ -10,6 +10,10 @@ set(CMAKE_CXX_STANDARD 20)
  
 option(FREETYPE_WRAPPER_DISABLE_WARNINGS_EXTERNAL_LIBS "Disable warnings for external libraries" TRUE)
 
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    add_compile_definitions(NOMINMAX)
+endif()
+
 set(TargetName FreeTypeWrapper)
 
 add_subdirectory(./External/freetype2)
