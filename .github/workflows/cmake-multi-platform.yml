@@ -79,10 +79,12 @@ jobs:
       #run: ctest --build-config ${{ matrix.build_type }}
       if: matrix.os == 'windows-latest'
       run: |
-        ./Test/Release/FreeTypeTest.exe
+        cd ./Test/Release
+        ./FreeTypeTest.exe
 
     - name: Test Ubuntu
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
       if: matrix.os == 'ubuntu-latest'
       run: |
-        ./Test/FreeTypeTest
+        cd ./Test
+        ./FreeTypeTest
