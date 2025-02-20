@@ -59,6 +59,7 @@ if (FREETYPE_WRAPPER_DISABLE_WARNINGS_EXTERNAL_LIBS)
             -Wno-nonportable-system-include-path
             -Wno-missing-noreturn
             -Wno-extra-semi-stmt
+            -Wno-switch-default
         )
         if (FREETYPE_WRAPPER_BUILD_FRIBIDI)
             target_compile_options(libfribidi PRIVATE 
@@ -76,7 +77,7 @@ if (FREETYPE_WRAPPER_DISABLE_WARNINGS_EXTERNAL_LIBS)
             -Wno-shadow
             -Wno-unsafe-buffer-usage
             -Wno-reserved-identifier
-            
+            -Wno-switch-default
             )
         endif()
     
