@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.10)
 
 project(FreeTypeWrapper)
 option(FREETYPE_WRAPPER_BUILD_SAMPLES "build freetype wrapper sample" ON)
