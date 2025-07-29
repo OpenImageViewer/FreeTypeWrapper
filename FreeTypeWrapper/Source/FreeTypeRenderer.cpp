@@ -75,7 +75,10 @@ namespace FreeType
         using namespace LLUtils;
 
         FT_Bitmap bitmap = params.bitmapGlyph->bitmap;
-        std::span bitmapBuffer = std::span(params.bitmapGlyph->bitmap.buffer,  static_cast<size_t>(bitmap.rows * static_cast<unsigned int>(bitmap.pitch)));
+        LLUtils::Buffer glyphBuffer( reinterpret_cast<const std::byte*>(params.bitmapGlyph->bitmap.buffer),
+                                    static_cast<size_t>(bitmap.rows * static_cast<unsigned int>(bitmap.pitch)));
+
+        std::span<uint8_t> bitmapBuffer(glyphBuffer);
 
         const int destPixelSize = sizeof(ColorF32);
         const uint32_t HeightInPixels = params.bitmapProperties.height;
@@ -86,7 +89,7 @@ namespace FreeType
         const size_t bufferSize = widthInPixels * HeightInPixels * destPixelSize;
         LLUtils::Buffer RGBABitmap(bufferSize);
         memset(RGBABitmap.data(), 0, RGBABitmap.size());
-        std::span<ColorF32,std::dynamic_extent> RGBABitmapPtr(reinterpret_cast<ColorF32*>(RGBABitmap.data()), widthInPixels * HeightInPixels);
+        std::span<ColorF32> RGBABitmapPtr(RGBABitmap);
 
         uint32_t sourceRowStart = 0;
 

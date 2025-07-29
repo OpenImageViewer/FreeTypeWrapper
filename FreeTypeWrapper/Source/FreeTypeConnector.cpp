@@ -3,6 +3,7 @@
 #include <string>
 #include <iostream>
 #include <span>
+#include <format>
 
 #include <FreeTypeWrapper/FreeTypeConnector.h>
 #include <FreeTypeRenderer.h>
@@ -198,7 +199,7 @@ namespace FreeType
 
                     FT_Glyph glyph;
                     if (FT_Error error = FT_Get_Glyph(face->glyph, &glyph))
-                        LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, "FreeType error, unable to render glyph");
+                        LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, std::format("FreeType error {0}, {1}", error, GenerateFreeTypeErrorString("unable to render glyph",error)));
 
                     if (glyph->format != FT_GLYPH_FORMAT_BITMAP)
                     {
@@ -271,13 +272,13 @@ namespace FreeType
     template <typename source_type, typename dest_type>
     void FreeTypeConnector::ResolvePremultipoliedBUffer(LLUtils::Buffer& dest, const LLUtils::Buffer& source, uint32_t width, uint32_t height)
 	{
-        std::span destPtr(reinterpret_cast<dest_type*>(dest.data()), width * height);
-        const std::span sourcePtr(reinterpret_cast<const source_type*>(source.data()), width * height);
+        std::span<dest_type> destPtr(dest);
+        const std::span<const source_type> sourcePtr(source);
 
         for (auto y = 0u ; y < height;y++)
             for (auto x = 0u; x < width; x++)
                 destPtr[y * width + x] = static_cast<dest_type>(sourcePtr[y * width + x].DivideAlpha());
-	}
+    }
 
 
     void FreeTypeConnector::CreateBitmap(const TextCreateParams& textCreateParams
@@ -334,8 +335,7 @@ namespace FreeType
 
         ColorF32 textBackgroundBuffer = renderOutline ? ColorF32(0.0f,0.0f,0.0f,0.0f) : static_cast<ColorF32>(backgroundColor).MultiplyAlpha();
 
-        std::span textBufferColor(reinterpret_cast<ColorF32*>(textBuffer.data()), totalTexels);
-        
+        std::span<ColorF32> textBufferColor(textBuffer);
 
         for (size_t i = 0; i < totalTexels; i++)
             textBufferColor[i] = textBackgroundBuffer;
@@ -345,7 +345,7 @@ namespace FreeType
         if (renderOutline)
         {
             outlineBuffer.Allocate(sizeOfDestBuffer);
-            std::span outlineBufferColor(reinterpret_cast<ColorF32*>(outlineBuffer.data()), totalTexels);
+            std::span<ColorF32> outlineBufferColor(outlineBuffer);
 
             //Reset outline buffer to background color.
             for (size_t i = 0; i < totalTexels; i++)
@@ -443,7 +443,7 @@ namespace FreeType
 
                 FT_Glyph glyph;
                 if (FT_Error error = FT_Get_Glyph(face->glyph, &glyph))
-                    LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, "FreeType error, unable to render glyph");
+                    LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, std::format("FreeType error {0}, {1}",error, GenerateFreeTypeErrorString("unable to render glyph", error)));
 
                 if (glyph->format != FT_GLYPH_FORMAT_BITMAP)
                 {

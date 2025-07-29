@@ -60,6 +60,10 @@ if (FREETYPE_WRAPPER_DISABLE_WARNINGS_EXTERNAL_LIBS)
             -Wno-missing-noreturn
             -Wno-extra-semi-stmt
             -Wno-switch-default
+            -Wno-reserved-identifier
+            -Wno-cast-function-type-strict
+            -Wno-reserved-identifier
+            -Wno-cast-function-type-mismatch
         )
         if (FREETYPE_WRAPPER_BUILD_FRIBIDI)
             target_compile_options(libfribidi PRIVATE 
@@ -78,6 +82,7 @@ if (FREETYPE_WRAPPER_DISABLE_WARNINGS_EXTERNAL_LIBS)
             -Wno-unsafe-buffer-usage
             -Wno-reserved-identifier
             -Wno-switch-default
+            -Wno-format
             )
         endif()
     
