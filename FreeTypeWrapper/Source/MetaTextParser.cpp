@@ -2,7 +2,7 @@
 #include <LLUtils/StringUtility.h>
 namespace FreeType
 {
-    FormattedTextEntry FormattedTextEntry::Parse(const std::wstring& format, const std::wstring& text)
+    FormattedTextEntry FormattedTextEntry::Parse(const string_type& format, const string_type& text)
     {
         using namespace std;
         using namespace LLUtils;
@@ -10,26 +10,24 @@ namespace FreeType
         using string_type = std::remove_const_t<std::remove_reference_t<decltype(text)>>;
         FormattedTextEntry result {};
 
-        wstring trimmed = StringUtility::ToLower(format);
-        trimmed.erase(trimmed.find_last_not_of(L" >") + 1);
-        trimmed.erase(0, trimmed.find_first_not_of(L" <"));
-
-        
+        string_type trimmed = StringUtility::ToLower(format);
+        trimmed.erase(trimmed.find_last_not_of(LLUTILS_TEXT(" >")) + 1);
+        trimmed.erase(0, trimmed.find_first_not_of(LLUTILS_TEXT(" <")));
 
         using stringList = ListString<string_type>;
 
         bool isValid = false;
-        stringList properties = StringUtility::split(trimmed, L';');
+        stringList properties = StringUtility::split(trimmed, LLUTILS_TEXT(';'));
         stringstream ss;
         for (const string_type& prop : properties)
         {
-            stringList trimmedList = StringUtility::split(prop, L'=');
+            stringList trimmedList = StringUtility::split(prop, LLUTILS_TEXT('='));
 
             if (trimmedList.size() == 2)
             {
                 const string_type key = StringUtility::ToLower(trimmedList[0]);
                 const string_type& value = trimmedList[1];
-                if (key == L"textcolor")
+                if (key == LLUTILS_TEXT("textcolor"))
                 {
                     result.textColor = Color::FromString(StringUtility::ToAString(value));
                 }
@@ -64,7 +62,7 @@ namespace FreeType
 
 
 
-    VecFormattedTextEntry MetaText::GetFormattedText(std::wstring text)
+    VecFormattedTextEntry MetaText::GetFormattedText(string_type text)
     {
         using namespace std;
         using string_type = decltype(text);

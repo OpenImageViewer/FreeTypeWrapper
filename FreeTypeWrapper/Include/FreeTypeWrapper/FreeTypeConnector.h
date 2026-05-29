@@ -44,8 +44,8 @@ namespace FreeType
 
     struct TextCreateParams
     {
-        std::wstring fontPath;
-        std::wstring text;
+        string_type fontPath;
+        string_type text;
         uint16_t fontSize{};
         LLUtils::Color textColor;
         LLUtils::Color backgroundColor;
@@ -107,7 +107,7 @@ namespace FreeType
      //private member methods
 
         
-        FreeTypeFont* GetOrCreateFont(const std::wstring& fontPath);
+        FreeTypeFont* GetOrCreateFont(const string_type& fontPath);
         FT_Stroker GetStroker();
         static std::string GenerateFreeTypeErrorString(std::string userMessage, FT_Error error);
 
@@ -119,7 +119,7 @@ namespace FreeType
         FT_Library fLibrary;
         FT_Stroker fStroker = nullptr;
 
-        std::map<std::wstring, FreeTypeFontUniquePtr> fFontNameToFont;
+        std::map<string_type, FreeTypeFontUniquePtr> fFontNameToFont;
 
     };
 }

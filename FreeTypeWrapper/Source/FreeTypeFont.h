@@ -7,7 +7,7 @@ namespace FreeType
     class FreeTypeFont
     {
     public:
-        FreeTypeFont(FT_Library ftLibrary, const std::wstring& fileName)
+        FreeTypeFont(FT_Library ftLibrary, const string_type& fileName)
         {
             fName = fileName;
             fLibrary = ftLibrary;
@@ -53,7 +53,7 @@ namespace FreeType
 
 
     private:
-        std::wstring fName;
+        string_type fName;
         FT_Face fFace = nullptr;
         FT_Library fLibrary = nullptr;
         uint16_t fFontSize = 0;

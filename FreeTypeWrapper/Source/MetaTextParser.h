@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <LLUtils/Color.h>
+#include "../Include/FreeTypeWrapper/FreeTypeCommon.h"
 
 namespace FreeType
 {
@@ -13,8 +14,8 @@ namespace FreeType
         //uint32_t outlineWidth;
         //uint32_t outlineColor;
 
-        std::wstring text;
-        static FormattedTextEntry Parse(const std::wstring& format, const std::wstring& text);
+        string_type text;
+        static FormattedTextEntry Parse(const string_type& format, const string_type& text);
     };
 
     using VecFormattedTextEntry = std::vector<FormattedTextEntry>;
@@ -22,6 +23,6 @@ namespace FreeType
     class MetaText
     {
     public:
-        static VecFormattedTextEntry GetFormattedText(std::wstring text);
+        static VecFormattedTextEntry GetFormattedText(string_type text);
     };
 }

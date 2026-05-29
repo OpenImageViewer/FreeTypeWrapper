@@ -107,8 +107,8 @@ namespace FreeType
         const bool lineEndFixedWidth = createFlags.test(TextCreateFlags::LineEndFixedWidth);
         const bool usebidiText = createFlags.test(TextCreateFlags::Bidirectional);
 
-        const std::wstring text = textCreateParams.text;
-        const std::wstring& fontPath = textCreateParams.fontPath;
+        const string_type text = textCreateParams.text;
+        const string_type& fontPath = textCreateParams.fontPath;
         const uint16_t fontSize = textCreateParams.fontSize;
         const uint32_t OutlineWidth = textCreateParams.outlineWidth;
         FT_Render_Mode textRenderMOde = FreeTypeRenderer::GetRenderMode(textCreateParams.renderMode);
@@ -241,7 +241,7 @@ namespace FreeType
         }
     }
 
-    FreeTypeFont* FreeTypeConnector::GetOrCreateFont(const std::wstring& fontPath)
+    FreeTypeFont* FreeTypeConnector::GetOrCreateFont(const string_type& fontPath)
     {
         FreeTypeFont* font = nullptr;
 
@@ -288,8 +288,8 @@ namespace FreeType
             )
     {
         using namespace std;
-        const std::wstring text = textCreateParams.text;
-        const std::wstring& fontPath = textCreateParams.fontPath;
+        const string_type text = textCreateParams.text;
+        const string_type& fontPath = textCreateParams.fontPath;
         const uint16_t fontSize = textCreateParams.fontSize;
         const uint32_t OutlineWidth = textCreateParams.outlineWidth;
         const LLUtils::Color outlineColor = textCreateParams.outlineColor;
