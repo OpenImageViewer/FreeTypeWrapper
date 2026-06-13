@@ -54,7 +54,6 @@ if (FREETYPE_WRAPPER_DISABLE_WARNINGS_EXTERNAL_LIBS)
             -Wno-implicit-fallthrough
             -Wno-shorten-64-to-32
             -Wno-cast-align
-            -Wno-cast-align
             -Wno-implicit-int-conversion
             -Wno-nonportable-system-include-path
             -Wno-missing-noreturn
@@ -64,6 +63,8 @@ if (FREETYPE_WRAPPER_DISABLE_WARNINGS_EXTERNAL_LIBS)
             -Wno-cast-function-type-strict
             -Wno-reserved-identifier
             -Wno-cast-function-type-mismatch
+            -Wno-implicit-void-ptr-cast
+            -Wno-padded
         )
         if (FREETYPE_WRAPPER_BUILD_FRIBIDI)
             target_compile_options(libfribidi PRIVATE 
