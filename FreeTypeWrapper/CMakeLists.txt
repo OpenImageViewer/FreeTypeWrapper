@@ -37,7 +37,10 @@ endif()
 target_include_directories(${TargetName} PRIVATE ./External/utf-cpp/include)
 target_include_directories(${TargetName} PRIVATE ./Source)
 target_include_directories(${TargetName} PRIVATE ./Include)
-target_include_directories(${TargetName} PRIVATE ./External/LLUtils/Include)
+if(NOT TARGET LLUtils::LLUtils)
+    add_subdirectory(./External/LLUtils)
+endif()
+target_link_libraries(${TargetName} PRIVATE LLUtils::LLUtils)
 
 
 if (FREETYPE_WRAPPER_DISABLE_WARNINGS_EXTERNAL_LIBS)
