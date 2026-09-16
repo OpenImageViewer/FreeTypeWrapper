@@ -101,20 +101,20 @@ namespace FreeType
         using namespace std;
         using namespace LLUtils;
 
-        const auto textCreateParams = measureParams.createParams;
-        const BitFlags<TextCreateFlags> createFlags{ textCreateParams.flags };
-        const bool useMetaText = createFlags.test(TextCreateFlags::UseMetaText);
+        const auto& textCreateParams = measureParams.createParams;
+        const BitFlags<TextCreateFlags> createFlags{textCreateParams.flags};
+        const bool useMetaText       = createFlags.test(TextCreateFlags::UseMetaText);
         const bool lineEndFixedWidth = createFlags.test(TextCreateFlags::LineEndFixedWidth);
-        const bool usebidiText = createFlags.test(TextCreateFlags::Bidirectional);
+        const bool usebidiText       = createFlags.test(TextCreateFlags::Bidirectional);
 
-        const string_type text = textCreateParams.text;
-        const string_type& fontPath = textCreateParams.fontPath;
-        const uint16_t fontSize = textCreateParams.fontSize;
-        const uint32_t OutlineWidth = textCreateParams.outlineWidth;
-        FT_Render_Mode textRenderMOde = FreeTypeRenderer::GetRenderMode(textCreateParams.renderMode);
+        const string_type& text          = textCreateParams.text;
+        const string_type& fontPath      = textCreateParams.fontPath;
+        const uint16_t fontSize          = textCreateParams.fontSize;
+        const uint32_t OutlineWidth      = textCreateParams.outlineWidth;
+        FT_Render_Mode textRenderMOde    = FreeTypeRenderer::GetRenderMode(textCreateParams.renderMode);
         FT_Render_Mode outlineRenderMode = FreeTypeRenderer::GetRenderMode(textCreateParams.renderMode);
-        const bool renderOutline = OutlineWidth > 0;
-        mesureResult = {};
+        const bool renderOutline         = OutlineWidth > 0;
+        mesureResult                     = {};
         if (measureParams.createParams.text.empty() == false)
         {
 
@@ -200,6 +200,13 @@ namespace FreeType
                     FT_Glyph glyph;
                     if (FT_Error error = FT_Get_Glyph(face->glyph, &glyph))
                         LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, std::format("FreeType error {0}, {1}", error, GenerateFreeTypeErrorString("unable to render glyph",error)));
+
+                    // Bitmap conversion replaces the handle; release the surviving glyph even if measurement fails.
+                    struct GlyphCleanup
+                    {
+                        FT_Glyph& glyph;
+                        ~GlyphCleanup() { FT_Done_Glyph(glyph); }
+                    } cleanup{glyph};
 
                     if (glyph->format != FT_GLYPH_FORMAT_BITMAP)
                     {
@@ -288,16 +295,16 @@ namespace FreeType
             )
     {
         using namespace std;
-        const string_type text = textCreateParams.text;
-        const string_type& fontPath = textCreateParams.fontPath;
-        const uint16_t fontSize = textCreateParams.fontSize;
-        const uint32_t OutlineWidth = textCreateParams.outlineWidth;
-        const LLUtils::Color outlineColor = textCreateParams.outlineColor;
+        const string_type& text              = textCreateParams.text;
+        const string_type& fontPath          = textCreateParams.fontPath;
+        const uint16_t fontSize              = textCreateParams.fontSize;
+        const uint32_t OutlineWidth          = textCreateParams.outlineWidth;
+        const LLUtils::Color outlineColor    = textCreateParams.outlineColor;
         const LLUtils::Color backgroundColor = textCreateParams.backgroundColor;
 
-        FT_Render_Mode textRenderMOde = FreeTypeRenderer::GetRenderMode(textCreateParams.renderMode);
+        FT_Render_Mode textRenderMOde    = FreeTypeRenderer::GetRenderMode(textCreateParams.renderMode);
         FT_Render_Mode outlineRenderMode = FreeTypeRenderer::GetRenderMode(textCreateParams.renderMode);
-        const bool renderOutline = OutlineWidth > 0;
+        const bool renderOutline         = OutlineWidth > 0;
 
         if (textRenderMOde == FT_Render_Mode::FT_RENDER_MODE_LCD && renderOutline == true)
             textRenderMOde = FT_Render_Mode::FT_RENDER_MODE_NORMAL;
@@ -311,17 +318,12 @@ namespace FreeType
 
         font->SetSize(fontSize, textCreateParams.DPIx, textCreateParams.DPIy);
 
-        TextMesureParams params;
-        params.createParams = textCreateParams;
-        
         TextMetrics metrics;
         if (in_metrics == nullptr)
-            MeasureText(params, metrics);
-        else
-            metrics = *in_metrics;
+            MeasureText({textCreateParams}, metrics);
 
-        
-        auto& mesaureResult = metrics;
+        // Cached measurements remain valid for this render; borrow them instead of copying their line data.
+        const auto& mesaureResult = in_metrics != nullptr ? *in_metrics : metrics;
 
         using namespace LLUtils;
         const uint32_t destPixelSize = sizeof(ColorF32);
@@ -366,12 +368,11 @@ namespace FreeType
         dest.pixelSizeInbytes = destPixelSize;
         dest.rowPitch = destRowPitch;
 
-        
-        int32_t penX = -mesaureResult.rect.LeftTop().x;
-        int32_t penY = -mesaureResult.rect.LeftTop().y;
+        const PointI32 origin = mesaureResult.rect.GetCorner(Corner::TopLeft);
+        int32_t penX          = -origin.x;
+        int32_t penY          = -origin.y;
 
-        
-        FT_Face face = font->GetFace();
+        FT_Face face             = font->GetFace();
         const auto descender = face->size->metrics.descender >> 6;
         const uint32_t rowHeight = mesaureResult.rowHeight;
 
@@ -392,7 +393,7 @@ namespace FreeType
             {
                 if (codepoint == L'\n')
                 {
-                    penX = static_cast<int>(-mesaureResult.rect.LeftTop().x);
+                    penX = static_cast<int>(-origin.x);
                     penY += rowHeight;
                     continue;
                 }
@@ -410,10 +411,10 @@ namespace FreeType
                 //Render outline
                 const auto advance = face->glyph->advance.x >> 6;
 
-                if (textCreateParams.maxWidthPx > 0 && penX + advance + mesaureResult.rect.LeftTop().x > static_cast<int>(textCreateParams.maxWidthPx))
+                if (textCreateParams.maxWidthPx > 0 && penX + advance + origin.x > static_cast<int>(textCreateParams.maxWidthPx))
                 {
                     penY += rowHeight;
-                    penX = static_cast<int>(-mesaureResult.rect.LeftTop().x);
+                    penX = static_cast<int>(-origin.x);
 
                 }
 
@@ -448,12 +449,13 @@ namespace FreeType
                 if (glyph->format != FT_GLYPH_FORMAT_BITMAP)
                 {
                     if (FT_Error error = FT_Glyph_To_Bitmap(&glyph, textRenderMOde, nullptr, true); error != FT_Err_Ok)
-                        LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError, "FreeType error, unable to render glyph");
+                        LL_EXCEPTION(LLUtils::Exception::ErrorCode::RuntimeError,
+                                     "FreeType error, unable to render glyph");
                 }
 
                 FT_BitmapGlyph bitmapGlyph = reinterpret_cast<FT_BitmapGlyph>(glyph);
                 FreeTypeRenderer::BitmapProperties bitmapProperties = FreeTypeRenderer::GetBitmapGlyphProperties(bitmapGlyph->bitmap);
-                const auto textcolor = el.textColor != Color{ 0, 0, 0, 0 } ? el.textColor : params.createParams.textColor;
+                const auto textcolor = el.textColor != Color{ 0, 0, 0, 0 } ? el.textColor : textCreateParams.textColor;
 
                 LLUtils::Buffer rasterizedGlyph = FreeTypeRenderer::RenderGlyphToBuffer({ bitmapGlyph , backgroundColor, textcolor , bitmapProperties });
 
